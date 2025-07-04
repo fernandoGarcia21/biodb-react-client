@@ -33,6 +33,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
           flexDirection: 'column',
           position: 'relative',
           minHeight: '100%',
+          flexGrow: 1,
         }}
       >
         <SideNav />

@@ -5,6 +5,16 @@ import { PlugsConnected as PlugsConnectedIcon } from '@phosphor-icons/react/dist
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 import { XSquare } from '@phosphor-icons/react/dist/ssr/XSquare';
+import { FediverseLogo } from '@phosphor-icons/react/dist/ssr/FediverseLogo';
+import { Cat as OrganismIcon } from '@phosphor-icons/react/dist/ssr/Cat';
+import { Plant as TraitIcon } from '@phosphor-icons/react/dist/ssr/Plant';
+import { Leaf as PropertyIcon } from '@phosphor-icons/react/dist/ssr/Leaf';
+import { Robot as BatchIcon } from '@phosphor-icons/react/dist/ssr/Robot';
+import { PushPin as PushPinIcon } from '@phosphor-icons/react/dist/ssr/PushPin';
+import { MapPinArea } from '@phosphor-icons/react/dist/ssr/MapPinArea';
+import { CalendarCheck as ProjectIcon } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
+import { Link as LinkIcon } from '@phosphor-icons/react/dist/ssr/Link';
+import { FileCode as TypeDatasetIcon } from '@phosphor-icons/react/dist/ssr/FileCode';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -13,4 +23,14 @@ export const navIcons = {
   'x-square': XSquare,
   user: UserIcon,
   users: UsersIcon,
+  organism: OrganismIcon,
+  property: PropertyIcon,
+  'batch-robot': BatchIcon,
+  'project-calendar': ProjectIcon,
+  link: LinkIcon,
+  'dataset-logo': TypeDatasetIcon,
+  'push-pin': PushPinIcon,
+  'map-pin-area': MapPinArea, 
+  trait: TraitIcon,
+  'fediverse-logo': FediverseLogo,
 } as Record<string, Icon>;

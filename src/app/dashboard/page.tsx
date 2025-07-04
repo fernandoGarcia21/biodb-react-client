@@ -1,130 +1,143 @@
+"use client";
 import * as React from 'react';
-import type { Metadata } from 'next';
-import Grid from '@mui/material/Unstable_Grid2';
+import { useEffect, useState, useRef } from 'react';
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
 import dayjs from 'dayjs';
 
 import { config } from '@/config';
-import { Budget } from '@/components/dashboard/overview/budget';
-import { LatestOrders } from '@/components/dashboard/overview/latest-orders';
-import { LatestProducts } from '@/components/dashboard/overview/latest-products';
-import { Sales } from '@/components/dashboard/overview/sales';
-import { TasksProgress } from '@/components/dashboard/overview/tasks-progress';
-import { TotalCustomers } from '@/components/dashboard/overview/total-customers';
-import { TotalProfit } from '@/components/dashboard/overview/total-profit';
-import { Traffic } from '@/components/dashboard/overview/traffic';
+import { Species } from '@/components/dashboard/overview/species';
+import { AboutUs } from '@/components/dashboard/overview/about-us';
+import { LatestDatasets } from '@/components/dashboard/overview/latest-datasets';
+import { Locations } from '@/components/dashboard/overview/locations';
+import { Traits } from '@/components/dashboard/overview/traits';
 
-export const metadata = { title: `Overview | Dashboard | ${config.site.name}` } satisfies Metadata;
+import { getSpeciesCountsRequest, getLocationOrganismsCountsRequest, getTraitsDataCountsRequest, getLatestDatasetsRequest } from '@/api/homeReports'; // Importing this to ensure the API is initialized, if needed
+
 
 export default function Page(): React.JSX.Element {
+
+  const isMounted = useRef(false);
+  const [speciesCounts, setSpeciesCounts] = useState([]);
+  const [traitsCounts, setTraitsCounts] = useState([]);
+  const [latestDatasets, setLatestDatasets] = useState([]);
+  const [customCategories, setCustomCategories] = useState([]);
+  const [locationOrganismsObjects, setLocationOrganismsObjects] = useState([]);
+    
+      useEffect(() => {
+      const fetchHomeReports = async () => {
+        try {
+          if (!isMounted.current) {
+            isMounted.current = true;
+            const speciesCountsResponse = await getSpeciesCountsRequest(); 
+            setSpeciesCounts(speciesCountsResponse.data);
+            console.log('Species counts:', speciesCountsResponse.data);
+
+            const traitsCountsResponse = await getTraitsDataCountsRequest(); 
+            setTraitsCounts(traitsCountsResponse.data);
+            console.log('Triats counts:', traitsCountsResponse.data);
+
+            // fetch other data like location organisms counts or latest datasets if needed
+            const locationOrganismsCountsResponse = await getLocationOrganismsCountsRequest(); 
+            console.log('Location organisms counts:', locationOrganismsCountsResponse.data);
+            
+            // Fetch latest datasets
+            const latestDatasetsResponse = await getLatestDatasetsRequest();
+            setLatestDatasets(latestDatasetsResponse.data);
+
+
+            // 1. Get unique location names for your categories (x-axis labels)
+            const tmpCustomCategories = Array.from(new Set(locationOrganismsCountsResponse.data.map(item => item.location_name)));
+            setCustomCategories(tmpCustomCategories);
+
+            // 2. Prepare a structure to hold the aggregated counts per species per location
+            const speciesDataMap = new Map(); // Map to store { species_name: { location_name: total_count } }
+
+            locationOrganismsCountsResponse.data.forEach(item => {
+              const speciesName = item.species_name;
+              const locationName = item.location_name;
+              const individuals = parseInt(item.number_individuals, 10); // Ensure it's an integer
+
+              if (!speciesDataMap.has(speciesName)) {
+                speciesDataMap.set(speciesName, new Map()); // Inner map for location counts
+              }
+              const locationCounts = speciesDataMap.get(speciesName);
+              locationCounts.set(locationName, (locationCounts.get(locationName) || 0) + individuals);
+            });
+
+            // 3. Convert the aggregated map into the desired array format for chart series
+            const chartSeries = [];
+            for (const [speciesName, locationCountsMap] of speciesDataMap.entries()) {
+              const dataForSpecies = tmpCustomCategories.map(locationName => {
+                // Get the count for this location and species, or 0 if not present
+                return locationCountsMap.get(locationName) || 0;
+              });
+
+              chartSeries.push({
+                name: speciesName,
+                data: dataForSpecies
+              });
+            }
+
+            setLocationOrganismsObjects(chartSeries);
+            console.log('Location organisms objects:', chartSeries);
+
+
+          }
+        } catch (error) {
+          console.error('Error fetching species coutns:', error);
+        }
+      };
+  
+      fetchHomeReports();
+  
+    }, []);
+
+  //Add title to the page
+    useEffect(() => {
+      document.title = `Overview | Dashboard | ${config.site.name}`;
+    }, []);
+
   return (
-    <Grid container spacing={3}>
-      <Grid lg={3} sm={6} xs={12}>
-        <Budget diff={12} trend="up" sx={{ height: '100%' }} value="$24k" />
+    <Grid container spacing={3} sx={{ width: '100%' }}>
+      {speciesCounts.map((speciesCount, index) => (
+          <Grid item key={index} lg={4} md={6} xs={12}>
+            <Species
+              name={speciesCount.species_name}
+              sx={{ height: '100%' }}
+              value={`${speciesCount.number_individuals} samples`}
+            />
+          </Grid>
+        ))
+      }
+      <Grid item xs={12} md={12} lg={6}>
+      <Locations
+          chartSeries={locationOrganismsObjects}
+          customCategories={customCategories}
+          sx={{ height: '100%', minWidth: customCategories.length*80 + 'px' }} // Adjust width based on number of species
+        />
+
+        
       </Grid>
-      <Grid lg={3} sm={6} xs={12}>
-        <TotalCustomers diff={16} trend="down" sx={{ height: '100%' }} value="1.6k" />
+      <Grid item xs={12} md={12} lg={6}>
+        <Traits chartSeries={traitsCounts.map((traitsCount) => parseInt(traitsCount.number_entries))} 
+        labels={traitsCounts.map((traitsCount) => (traitsCount.trait_name))} sx={{ height: '100%' }} />
       </Grid>
-      <Grid lg={3} sm={6} xs={12}>
-        <TasksProgress sx={{ height: '100%' }} value={75.5} />
-      </Grid>
-      <Grid lg={3} sm={6} xs={12}>
-        <TotalProfit sx={{ height: '100%' }} value="$15k" />
-      </Grid>
-      <Grid lg={8} xs={12}>
-        <Sales
-          chartSeries={[
-            { name: 'This year', data: [18, 16, 5, 8, 3, 14, 14, 16, 17, 19, 18, 20] },
-            { name: 'Last year', data: [12, 11, 4, 6, 2, 9, 9, 10, 11, 12, 13, 13] },
-          ]}
+      <Grid item xs={12} md={6}>
+        <LatestDatasets
+          datasets={latestDatasets.map((dataset) => ({
+            id: dataset.id + '-' + dataset.type,
+            name: dataset.name,
+            updatedAt: dayjs(dataset.date_dataset).toDate(),
+            type: dataset.type,
+            link_path: dataset.link_path,
+          }))}
           sx={{ height: '100%' }}
         />
       </Grid>
-      <Grid lg={4} md={6} xs={12}>
-        <Traffic chartSeries={[63, 15, 22]} labels={['Desktop', 'Tablet', 'Phone']} sx={{ height: '100%' }} />
-      </Grid>
-      <Grid lg={4} md={6} xs={12}>
-        <LatestProducts
-          products={[
-            {
-              id: 'PRD-005',
-              name: 'Soja & Co. Eucalyptus',
-              image: '/assets/product-5.png',
-              updatedAt: dayjs().subtract(18, 'minutes').subtract(5, 'hour').toDate(),
-            },
-            {
-              id: 'PRD-004',
-              name: 'Necessaire Body Lotion',
-              image: '/assets/product-4.png',
-              updatedAt: dayjs().subtract(41, 'minutes').subtract(3, 'hour').toDate(),
-            },
-            {
-              id: 'PRD-003',
-              name: 'Ritual of Sakura',
-              image: '/assets/product-3.png',
-              updatedAt: dayjs().subtract(5, 'minutes').subtract(3, 'hour').toDate(),
-            },
-            {
-              id: 'PRD-002',
-              name: 'Lancome Rouge',
-              image: '/assets/product-2.png',
-              updatedAt: dayjs().subtract(23, 'minutes').subtract(2, 'hour').toDate(),
-            },
-            {
-              id: 'PRD-001',
-              name: 'Erbology Aloe Vera',
-              image: '/assets/product-1.png',
-              updatedAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-          ]}
-          sx={{ height: '100%' }}
-        />
-      </Grid>
-      <Grid lg={8} md={12} xs={12}>
-        <LatestOrders
-          orders={[
-            {
-              id: 'ORD-007',
-              customer: { name: 'Ekaterina Tankova' },
-              amount: 30.5,
-              status: 'pending',
-              createdAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-            {
-              id: 'ORD-006',
-              customer: { name: 'Cao Yu' },
-              amount: 25.1,
-              status: 'delivered',
-              createdAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-            {
-              id: 'ORD-004',
-              customer: { name: 'Alexa Richardson' },
-              amount: 10.99,
-              status: 'refunded',
-              createdAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-            {
-              id: 'ORD-003',
-              customer: { name: 'Anje Keizer' },
-              amount: 96.43,
-              status: 'pending',
-              createdAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-            {
-              id: 'ORD-002',
-              customer: { name: 'Clarke Gillebert' },
-              amount: 32.54,
-              status: 'delivered',
-              createdAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-            {
-              id: 'ORD-001',
-              customer: { name: 'Adam Denisov' },
-              amount: 16.76,
-              status: 'delivered',
-              createdAt: dayjs().subtract(10, 'minutes').toDate(),
-            },
-          ]}
+      <Grid item xs={12} md={6}>
+        <AboutUs
+          info={[]}
           sx={{ height: '100%' }}
         />
       </Grid>

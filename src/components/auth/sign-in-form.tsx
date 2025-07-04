@@ -17,6 +17,8 @@ import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { EyeSlash as EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
+import { useContext } from 'react';
+import { UserContext } from '@/contexts/user-context';
 
 import { paths } from '@/paths';
 import { authClient } from '@/lib/auth/client';
@@ -29,10 +31,12 @@ const schema = zod.object({
 
 type Values = zod.infer<typeof schema>;
 
-const defaultValues = { email: 'sofia@devias.io', password: 'Secret1' } satisfies Values;
+const defaultValues = { email: 'diegos@gmail.com', password: '000000' } satisfies Values;
 
 export function SignInForm(): React.JSX.Element {
   const router = useRouter();
+
+  const { setPerson } = useContext(UserContext);
 
   const { checkSession } = useUser();
 
@@ -51,12 +55,18 @@ export function SignInForm(): React.JSX.Element {
     async (values: Values): Promise<void> => {
       setIsPending(true);
 
-      const { error } = await authClient.signInWithPassword(values);
+      const { error, personData } = await authClient.signInWithPassword(values);
+      setIsPending(false);
 
       if (error) {
         setError('root', { type: 'server', message: error });
         setIsPending(false);
         return;
+      }
+
+      // Update the user object with the returned data
+      if(personData){
+        setPerson(personData);
       }
 
       // Refresh the auth state

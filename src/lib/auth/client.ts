@@ -1,6 +1,8 @@
 'use client';
 
 import type { User } from '@/types/user';
+import { userLogin, verifyToken, userLogout } from '@/api/auth';
+import Cookies from 'js-cookie';
 
 function generateToken(): string {
   const arr = new Uint8Array(12);
@@ -9,11 +11,11 @@ function generateToken(): string {
 }
 
 const user = {
-  id: 'USR-000',
+  id: '',
   avatar: '/assets/avatar.png',
-  firstName: 'Sofia',
-  lastName: 'Rivers',
-  email: 'sofia@devias.io',
+  firstName: '',
+  lastName: '',
+  email: '',
 } satisfies User;
 
 export interface SignUpParams {
@@ -55,11 +57,24 @@ class AuthClient {
     const { email, password } = params;
 
     // Make API request
+    try{
+      const loginData = {'username': email, 'password': password};
+      const res = await userLogin(loginData);
+      console.log(res);
 
-    // We do not handle the API, so we'll check if the credentials match with the hardcoded ones.
-    if (email !== 'sofia@devias.io' || password !== 'Secret1') {
-      return { error: 'Invalid credentials' };
-    }
+      // Update the user object with the returned data
+      const person = {
+        firstName : res.data.firstName,
+        lastName : res.data.familyName,
+        email : res.data.email
+      }
+
+      return {error: null, personData: person};
+
+    } catch (err){
+      console.log(err);
+      return { error: err.message, personData: null};
+  }
 
     const token = generateToken();
     localStorage.setItem('custom-auth-token', token);
@@ -77,18 +92,40 @@ class AuthClient {
 
   async getUser(): Promise<{ data?: User | null; error?: string }> {
     // Make API request
-
-    // We do not handle the API, so just check if we have a token in localStorage.
-    const token = localStorage.getItem('custom-auth-token');
-
-    if (!token) {
-      return { data: null };
+    //Validate the token and get the user data
+    console.log('Validating token in getUser() ');
+    const cookies = Cookies.get();
+    if(cookies.jwt){
+        try{
+            console.log(cookies.jwt);
+            //Todo, bring all user information from the token
+            const res = await verifyToken(cookies.jwt);
+            if(res.data){
+                console.log('Token is valid');
+                return { data: res.data };
+            }else{
+                console.log('Token is not valid - no data in the response');
+                return { data: null };
+            }
+        }catch(error){
+            console.log('Token is not valid in catch');
+            return { data: null };
+        }
+    }else{
+        console.log('Token is not valid in validating jwt');
+        return { data: null };
     }
-
-    return { data: user };
   }
 
   async signOut(): Promise<{ error?: string }> {
+
+    try{
+      const res = await userLogout();
+      console.log(res);
+    } catch (err){
+      console.log(err);
+      return { error: err.message};
+  }
     localStorage.removeItem('custom-auth-token');
 
     return {};

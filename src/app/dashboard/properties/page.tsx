@@ -1,0 +1,275 @@
+"use client";
+import { useParams, useRouter } from 'next/navigation';
+import * as React from 'react';
+import {useEffect, useState, useRef} from 'react';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { Download as DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+
+import { config } from '@/config';
+import { PropertiesFilters } from '@/components/dashboard/properties/properties-filters';
+import { PropertiesTable } from '@/components/dashboard/properties/properties-table';
+import type { Property } from '@/components/dashboard/properties/properties-table';
+import { paths } from '@/paths'; 
+
+import { getPropertyRequest, getPropertiesRequest, deletePropertyRequest } from '@/api/properties';
+import {BACKEND_ENDPOINT_URL_IMAGES} from '@/constants';
+
+export default function Page(): React.JSX.Element {
+  const router = useRouter();
+  const [properties, setProperties] = useState([]);
+  const isMounted = useRef(false);
+
+  const fetchProperties = async () => {
+    try {
+      if (!isMounted.current) {
+        isMounted.current = true;
+        const response = await getPropertiesRequest(); 
+        setProperties(response.data);
+        console.log('Properties:', response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    }
+  };
+
+  useEffect(() => {
+      fetchProperties();
+    
+  }, []);
+
+
+  //Add title to the page
+  useEffect(() => {
+    document.title = `All properties | Dashboard | ${config.site.name}`;
+  }, []);
+
+  //State for the operation result messages
+  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [errorMessage, setErrorMessage] = React.useState(null);
+
+  //Code for the delete dialog
+  const [open, setOpen] = React.useState(false);
+  const [deleteName, setDeleteName] = React.useState("");
+  const [deleteId, setDeleteId] = React.useState(null);
+  const errorRef = React.useRef<HTMLDivElement>(null);
+
+  const handleDeleteClickOpen = (idProperty: number, nameProperty: string) => {
+    setDeleteId(idProperty);
+    setDeleteName(nameProperty);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setDeleteId(null);
+    setDeleteName('');
+    setOpen(false);
+  };
+
+  const handleDelete = async () => {
+    // Perform delete operation here
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    try{
+      if (deleteId) {
+        await deletePropertyRequest(deleteId);
+        setSuccessMessage(`Property ${deleteName} eliminated successfully!`);
+          // Refresh the properties table
+        isMounted.current = false;
+        fetchProperties();
+      } else {
+        throw new Error('Property ID is null or undefined when trying to delete');
+      }
+    }catch(error){
+      if (error instanceof Error && error.request && error.request.response) {
+        const errorMessage = JSON.parse(error.request.response).message;
+        setErrorMessage(String(errorMessage));
+      } else {
+        setErrorMessage(String(error));
+      }
+    }
+    console.log('Item deleted');
+    handleClose();
+
+    //Scroll to the error message
+    if (errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+
+  };
+
+  const handleUpdateClick = (idProperty: number) => {
+    router.push(paths.dashboard.traitPropertiesUpdate(idProperty));
+  };
+
+  //Code for the protocol dialog
+  const [openProtocol, setOpenProtocol] = React.useState(false);
+  const [propertyProtocolName, setPropertyProtocolName] = React.useState("");
+  const [propertyProtocol, setPropertyProtocol] = React.useState("");
+
+  const handleProtocolClickOpen = async(idProperty: number) => {
+    try {
+      if(!openProtocol && idProperty){
+        const responseProperty = await getPropertyRequest(idProperty);
+        
+        if (responseProperty.data && responseProperty.data.length > 0) {
+          setPropertyProtocolName(responseProperty.data[0].name);
+          
+          // Preprocess the HTML to update image paths
+          const rawProtocol = responseProperty.data[0].protocol;
+          const updatedProtocol = preprocessHtml(rawProtocol);
+          setPropertyProtocol(updatedProtocol);
+        }
+        setOpenProtocol(true);
+      }
+      
+      } catch (error) {
+          console.error('Error fetching property info:', error);
+      }
+  };
+
+  const handleCloseProtocol = () => {
+    setPropertyProtocolName('');
+    setPropertyProtocol('');
+    setOpenProtocol(false);
+  };
+
+  // Function to preprocess HTML and update image paths
+const preprocessHtml = (html: string): string => {
+  const backendImageBaseUrl = BACKEND_ENDPOINT_URL_IMAGES; // Replace with your backend URL
+
+  // Use a DOM parser to manipulate the HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  // Update all <img> tags
+  const images = doc.querySelectorAll('img');
+  images.forEach((img) => {
+    const src = img.getAttribute('src');
+    if (src && !src.startsWith('http')) {
+      // Update the src to point to the backend API
+      img.setAttribute('src', `${backendImageBaseUrl}${src}`);
+    }
+  });
+
+  // Serialize the updated HTML back to a string
+  return doc.body.innerHTML;
+};
+
+
+  //Initialize the pagination of the table
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  //Paginate the list of properties
+  const paginatedProperties = applyPagination(properties, page, rowsPerPage);
+
+  //Define the event handlers for the pagination
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Rows per page :', event.target.value);
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    console.log('The new page number :', newPage);
+    setPage(newPage);
+  };
+
+  return (
+      <Stack spacing={3}>
+        <Stack direction="row" spacing={3}>
+          <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
+            <Typography variant="h4">All trait properties</Typography>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
+                Import
+              </Button>
+              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
+                Export
+              </Button>
+            </Stack>
+          </Stack>
+          <div>
+            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
+              Add
+            </Button>
+          </div>
+        </Stack>
+        <PropertiesFilters />
+        <PropertiesTable
+          count={properties.length}
+          page={page}
+          rows={paginatedProperties}
+          rowsPerPage={rowsPerPage}
+          showTraitName={true}
+          myRowsPerPageChangeEvent={handleChangeRowsPerPage}
+          myPageChangeEvent={handleChangePage}
+          handleDeleteClickOpen={handleDeleteClickOpen}
+          handleUpdateClick={handleUpdateClick}
+          handleProtocolClickOpen={handleProtocolClickOpen}
+        />
+        <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        >
+        <DialogTitle id="alert-dialog-title">
+          {`Are you sure you want to delete ${deleteName}?`}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleDelete} autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openProtocol}
+        onClose={handleCloseProtocol}
+        aria-labelledby="alert-protocol-dialog-title"
+        aria-describedby="alert-dialog-description"
+        fullWidth // Makes the dialog take the full width of the container
+        maxWidth="xl" // Sets the maximum width to extra-large (you can adjust this)
+        sx={{
+          '& .MuiDialog-paper': {
+            width: '90%', // Adjust the width to occupy 90% of the screen
+            maxWidth: 'none', // Disable the default maxWidth constraint
+          },
+        }}
+        >
+        <DialogTitle id="alert-protocol-dialog-title">
+          {`Protocol for collecting and recording ${propertyProtocolName}`}
+        </DialogTitle>
+        <DialogContent>
+          <div dangerouslySetInnerHTML={{ __html: propertyProtocol }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseProtocol}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </Stack>
+  );
+}
+
+function applyPagination(rows: Property[], page: number, rowsPerPage: number): Property[] {
+  return rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+}

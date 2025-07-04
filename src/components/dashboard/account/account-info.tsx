@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 
 const user = {
   name: 'Sofia Rivers',
-  avatar: '/assets/avatar.png',
+  avatar: '/assets/neutral-avatar.png',
   jobTitle: 'Senior Developer',
   country: 'USA',
   city: 'Los Angeles',

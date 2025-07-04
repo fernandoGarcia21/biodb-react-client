@@ -2,15 +2,17 @@
 
 import * as React from 'react';
 
-import type { User } from '@/types/user';
+import type { User, Person } from '@/types/user';
 import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
 
 export interface UserContextValue {
   user: User | null;
+  person: Person | null;
   error: string | null;
   isLoading: boolean;
   checkSession?: () => Promise<void>;
+  setPerson?: (person: Person | null) => void; // New method to update the person info
 }
 
 export const UserContext = React.createContext<UserContextValue | undefined>(undefined);
@@ -22,6 +24,7 @@ export interface UserProviderProps {
 export function UserProvider({ children }: UserProviderProps): React.JSX.Element {
   const [state, setState] = React.useState<{ user: User | null; error: string | null; isLoading: boolean }>({
     user: null,
+    person:null,
     error: null,
     isLoading: true,
   });
@@ -43,6 +46,10 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     }
   }, []);
 
+  const setPerson = React.useCallback((person: Person | null) => {
+    setState((prev) => ({ ...prev, person }));
+  }, []);
+
   React.useEffect(() => {
     checkSession().catch((err: unknown) => {
       logger.error(err);
@@ -51,7 +58,7 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Expected
   }, []);
 
-  return <UserContext.Provider value={{ ...state, checkSession }}>{children}</UserContext.Provider>;
+  return <UserContext.Provider value={{ ...state, checkSession, setPerson }}>{children}</UserContext.Provider>;
 }
 
 export const UserConsumer = UserContext.Consumer;

@@ -1,5 +1,7 @@
 import * as React from 'react';
 import RouterLink from 'next/link';
+import { useContext } from 'react';
+import { UserContext } from '@/contexts/user-context';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
@@ -17,6 +19,7 @@ import { authClient } from '@/lib/auth/client';
 import { logger } from '@/lib/default-logger';
 import { useUser } from '@/hooks/use-user';
 
+
 export interface UserPopoverProps {
   anchorEl: Element | null;
   onClose: () => void;
@@ -25,6 +28,9 @@ export interface UserPopoverProps {
 
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
   const { checkSession } = useUser();
+
+  const { person } = useContext(UserContext);
+  console.log('THE PERSON IS: ', person);
 
   const router = useRouter();
 
@@ -57,9 +63,9 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       slotProps={{ paper: { sx: { width: '240px' } } }}
     >
       <Box sx={{ p: '16px 20px ' }}>
-        <Typography variant="subtitle1">Sofia Rivers</Typography>
+        <Typography variant="subtitle1">{person ? `${person.firstName } ${person.lastName}` : ''}</Typography>
         <Typography color="text.secondary" variant="body2">
-          sofia.rivers@devias.io
+        {person ? person.email : ''}
         </Typography>
       </Box>
       <Divider />

@@ -4,6 +4,7 @@ import * as React from 'react';
 import RouterLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import Box from '@mui/material/Box';
+import { useUser } from '@/hooks/use-user';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
@@ -18,9 +19,41 @@ import { Logo } from '@/components/core/logo';
 
 import { navItems } from './config';
 import { navIcons } from './nav-icons';
+import { protectedRoutes } from '@/protected-routes';
 
 export function SideNav(): React.JSX.Element {
   const pathname = usePathname();
+  const { user } = useUser();
+
+  //Check if the user is logged in and show only the necessary items, excluding protected routes
+    const navItemsToShow = navItems.filter((item) => { 
+  
+        //Find the protected route that matches the item key
+        const tmpProtectedRoute = protectedRoutes.find((protRoute) =>  protRoute.navItemKey === item.key );
+  
+      if (tmpProtectedRoute) {
+        //Check if the user is logged in and validate the level of the logged user with the level of the protected route
+        if(user){
+            const matchedUserLevel = tmpProtectedRoute.requiredRoles.find((role) => {
+              if(role === user.levelId){
+                return true;
+              }else{
+                return false;
+              }
+            });
+
+            if(matchedUserLevel){
+              return true;
+            }else{
+              return false;
+            }
+        }else{
+          return false;
+        }
+        
+      }
+      return true;
+    });
 
   return (
     <Box
@@ -54,6 +87,8 @@ export function SideNav(): React.JSX.Element {
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-flex' }}>
           <Logo color="light" height={32} width={122} />
         </Box>
+
+        {/* Workspace: it is not implemented and not requiered for the database
         <Box
           sx={{
             alignItems: 'center',
@@ -75,41 +110,14 @@ export function SideNav(): React.JSX.Element {
           </Box>
           <CaretUpDownIcon />
         </Box>
+      */}
+
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
-      <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>
-        {renderNavItems({ pathname, items: navItems })}
+      <Box component="nav" sx={{ flex: '1 1 auto', p: '12px', overflowY: 'auto' }}>
+        {renderNavItems({ pathname, items: navItemsToShow })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
-      <Stack spacing={2} sx={{ p: '12px' }}>
-        <div>
-          <Typography color="var(--mui-palette-neutral-100)" variant="subtitle2">
-            Need more features?
-          </Typography>
-          <Typography color="var(--mui-palette-neutral-400)" variant="body2">
-            Check out our Pro solution template.
-          </Typography>
-        </div>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Box
-            component="img"
-            alt="Pro version"
-            src="/assets/devias-kit-pro.png"
-            sx={{ height: 'auto', width: '160px' }}
-          />
-        </Box>
-        <Button
-          component="a"
-          endIcon={<ArrowSquareUpRightIcon fontSize="var(--icon-fontSize-md)" />}
-          fullWidth
-          href="https://material-kit-pro-react.devias.io/"
-          sx={{ mt: 2 }}
-          target="_blank"
-          variant="contained"
-        >
-          Pro version
-        </Button>
-      </Stack>
     </Box>
   );
 }

@@ -4,6 +4,7 @@ import * as React from 'react';
 import RouterLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import Box from '@mui/material/Box';
+import { useUser } from '@/hooks/use-user';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
@@ -19,6 +20,7 @@ import { Logo } from '@/components/core/logo';
 
 import { navItems } from './config';
 import { navIcons } from './nav-icons';
+import { protectedRoutes } from '@/protected-routes';
 
 export interface MobileNavProps {
   onClose?: () => void;
@@ -28,6 +30,37 @@ export interface MobileNavProps {
 
 export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element {
   const pathname = usePathname();
+  const { user } = useUser();
+
+  //Check if the user is logged in and show only the necessary items, excluding protected routes
+      const navItemsToShow = navItems.filter((item) => { 
+    
+          //Find the protected route that matches the item key
+          const tmpProtectedRoute = protectedRoutes.find((protRoute) =>  protRoute.navItemKey === item.key );
+    
+        if (tmpProtectedRoute) {
+          //Check if the user is logged in and validate the level of the logged user with the level of the protected route
+          if(user){
+              const matchedUserLevel = tmpProtectedRoute.requiredRoles.find((role) => {
+                if(role === user.levelId){
+                  return true;
+                }else{
+                  return false;
+                }
+              });
+  
+              if(matchedUserLevel){
+                return true;
+              }else{
+                return false;
+              }
+          }else{
+            return false;
+          }
+          
+        }
+        return true;
+      });
 
   return (
     <Drawer
@@ -85,7 +118,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>
-        {renderNavItems({ pathname, items: navItems })}
+        {renderNavItems({ pathname, items: navItemsToShow })}
       </Box>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Stack spacing={2} sx={{ p: '12px' }}>
