@@ -22,6 +22,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
+import Typography from '@mui/material/Typography';
 
 import { getExternalDatasetRequest, updateExternalDatasetRequest } from '@/api/externalDatasets';
 import { getTypeDatasetsRequest } from '@/api/typeDatasets';
@@ -178,7 +179,7 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
-                  <OutlinedInput {...field} label="Description" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Description" type="text" multiline="true" minRows={4} />
                   {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
                 </FormControl>
                 )}

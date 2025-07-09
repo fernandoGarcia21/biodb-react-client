@@ -24,6 +24,8 @@ import { UserPlus as UserIcon } from '@phosphor-icons/react/dist/ssr/UserPlus';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths } from '@/paths';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export interface Person {
   id: string;
@@ -65,6 +67,7 @@ export function PersonsTable({
 
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
+  const { user } = useUser();
 
   return (
     <Card>
@@ -91,8 +94,12 @@ export function PersonsTable({
               <TableCell>Email</TableCell>
               <TableCell>Additional information</TableCell>
               <TableCell>User</TableCell>
-              <TableCell>Update</TableCell>
-              <TableCell>Delete</TableCell>
+              { (user?.levelId === USER_LEVEL_ADMIN) && (
+                <>
+                  <TableCell>Update</TableCell>
+                  <TableCell>Delete</TableCell>
+                </>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -122,38 +129,47 @@ export function PersonsTable({
                   <TableCell>{row.abbreviation}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>{row.additional_info}</TableCell>
+                  
                   <TableCell>
                     {row.user_id ? (
                       'Yes'
-                    ) : (
-                      <IconButton aria-label="add-user"
-                      onClick={() => { handleClickOpenAddUser(Number(row.id), `${row.first_name} ${row.family_name}`); }}>
+                    ) : user?.levelId === USER_LEVEL_ADMIN ? (
+                      <IconButton
+                        aria-label="add-user"
+                        onClick={() => { handleClickOpenAddUser(Number(row.id), `${row.first_name} ${row.family_name}`); }}
+                      >
                         <Tooltip title="Add user">
                           <UserIcon />
                         </Tooltip>
-                    </IconButton>
+                      </IconButton>
+                    ) : (
+                      'No'
                     )}
                   </TableCell>
-                  <TableCell>
-                  <IconButton aria-label="update"
-                      onClick={() => { handleUpdateClick(Number(row.id)); }}>
-                        <Tooltip title="Edit">
-                          <UpdateIcon />
-                        </Tooltip>
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="delete"
-                      onClick={() => {
-                        handleClickOpen(Number(row.id), `${row.first_name} ${row.family_name}`);
-                      }}
-                    >
-                      <Tooltip title="Delete">
-                        <DeleteIcon />
-                      </Tooltip>
-                    </IconButton>
-                  </TableCell>
+
+                      
+                    { (user?.levelId === USER_LEVEL_ADMIN ) && ( <>
+                      <TableCell>
+                      <IconButton aria-label="update"
+                          onClick={() => { handleUpdateClick(Number(row.id)); }}>
+                            <Tooltip title="Edit">
+                              <UpdateIcon />
+                            </Tooltip>
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          aria-label="delete"
+                          onClick={() => {
+                            handleClickOpen(Number(row.id), `${row.first_name} ${row.family_name}`);
+                          }}
+                        >
+                          <Tooltip title="Delete">
+                            <DeleteIcon />
+                          </Tooltip>
+                        </IconButton>
+                      </TableCell>
+                    </> ) }
                 </TableRow>
               );
             })}

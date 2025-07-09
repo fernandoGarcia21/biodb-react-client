@@ -22,12 +22,14 @@ import type { Property } from '@/components/dashboard/properties/properties-tabl
 import { paths } from '@/paths'; 
 
 import { getPropertyRequest, getPropertiesRequest, deletePropertyRequest } from '@/api/properties';
-import {BACKEND_ENDPOINT_URL_IMAGES} from '@/constants';
+import {BACKEND_ENDPOINT_URL_IMAGES, USER_LEVEL_ADMIN, USER_LEVEL_LEADER} from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [properties, setProperties] = useState([]);
   const isMounted = useRef(false);
+  const { user } = useUser();
 
   const fetchProperties = async () => {
     try {
@@ -192,22 +194,16 @@ const preprocessHtml = (html: string): string => {
         <Stack direction="row" spacing={3}>
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">All trait properties</Typography>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Import
-              </Button>
-              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
-              </Button>
-            </Stack>
           </Stack>
-          <div>
-            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
-              Add
-            </Button>
-          </div>
+          {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+            <div>
+              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
+                Add
+              </Button>
+            </div>
+          )}
         </Stack>
-        <PropertiesFilters />
+        {/**<PropertiesFilters /> */}
         <PropertiesTable
           count={properties.length}
           page={page}

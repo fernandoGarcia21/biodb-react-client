@@ -3,7 +3,7 @@
   "version": "4.0.0",
   "author": "Devias",
   "licence": "MIT",
-  "homepage": "https://devias.io",
+  "homepage": "http://localhost:8080/dashboard",
   "private": false,
   "scripts": {
     "dev": "next dev -p 8080 -H 0.0.0.0",

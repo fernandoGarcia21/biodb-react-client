@@ -20,6 +20,8 @@ import { ExternalDatasetsFilters } from '@/components/dashboard/externaldatasets
 import { ExternalDatasetsTable } from '@/components/dashboard/externaldatasets/externaldatasets-table';
 import type { ExternalDataset } from '@/components/dashboard/externaldatasets/externaldatasets-table';
 import { paths } from '@/paths';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 import { getExternalDatasetsRequest, deleteExternalDatasetRequest } from '@/api/externalDatasets';
 
@@ -27,6 +29,7 @@ export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [externalDatasets, setExternalDatasets] = useState([]);
   const isMounted = useRef(false);
+  const { user } = useUser();
 
   const fetchExternalDatasets = async () => {
     try {
@@ -142,22 +145,16 @@ export default function Page(): React.JSX.Element {
         <Stack direction="row" spacing={3}>
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">External datasets list</Typography>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Import
-              </Button>
-              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
-              </Button>
-            </Stack>
           </Stack>
-          <div>
-            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
-              Add
-            </Button>
-          </div>
+          { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && ( 
+            <div>
+              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
+                Add
+              </Button>
+            </div>
+          )}
         </Stack>
-        <ExternalDatasetsFilters />
+        {/**<ExternalDatasetsFilters />*/}
         <ExternalDatasetsTable
           count={externalDatasets.length}
           page={page}

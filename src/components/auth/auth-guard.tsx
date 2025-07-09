@@ -21,7 +21,7 @@ export function AuthGuard({ children }: AuthGuardProps): React.JSX.Element | nul
   const [isChecking, setIsChecking] = React.useState<boolean>(true);
 
   const checkPermissions = async (): Promise<void> => {
-    console.log('Requested path:', pathname); // Log the current path
+    //console.log('Requested path:', pathname); // Log the current path
     if (isLoading) {
       return;
     }
@@ -56,7 +56,7 @@ export function AuthGuard({ children }: AuthGuardProps): React.JSX.Element | nul
       // noop
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Expected
-  }, [user, error, isLoading]);
+  }, [user, error, isLoading, pathname, router]);
 
   if (isChecking) {
     return null;

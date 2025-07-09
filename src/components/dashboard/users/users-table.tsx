@@ -21,8 +21,8 @@ import { Power  as ActivateIcon } from '@phosphor-icons/react/dist/ssr/Power';
 import { XCircle  as DeactivateIcon } from '@phosphor-icons/react/dist/ssr/XCircle';
 
 import { useSelection } from '@/hooks/use-selection';
-import { USER_STATUS_ACTIVE, USER_STATUS_NEW, USER_STATUS_INACTIVE } from '@/constants';
-
+import { USER_STATUS_ACTIVE, USER_STATUS_NEW, USER_STATUS_INACTIVE, USER_LEVEL_ADMIN } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export interface User {
   id: string;
@@ -63,6 +63,7 @@ export function UsersTable({
 
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
+  const { user } = useUser();
 
   return (
     <Card>
@@ -88,8 +89,10 @@ export function UsersTable({
               <TableCell>Email</TableCell>
               <TableCell>Level</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell>Edit</TableCell>
+              { (user?.levelId === USER_LEVEL_ADMIN) && ( <>
+                <TableCell>Action</TableCell>
+                <TableCell>Edit</TableCell>
+              </> )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -119,31 +122,33 @@ export function UsersTable({
                   <TableCell>{row.email}</TableCell>
                   <TableCell>{row.level}</TableCell>
                   <TableCell>{row.status}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="action"
-                      onClick={() => {
-                        handleClickOpen(Number(row.id), row.email);
-                      }}
-                    >
-                      {row.status_id ===  USER_STATUS_NEW && 
-                      <Tooltip title="Activate"><ActivateIcon /></Tooltip>
-                      }
-                      {row.status_id ===  USER_STATUS_ACTIVE && 
-                      <Tooltip title="Inactivate"><DeactivateIcon /></Tooltip> }
-                      {row.status_id ===  USER_STATUS_INACTIVE && 
-                      <Tooltip title="Activate"><ActivateIcon /></Tooltip> }
-                      
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                  <IconButton aria-label="update"
-                      onClick={() => { handleUpdateClick(Number(row.id)); }}>
-                        <Tooltip title="Change level or password">
-                          <UpdateIcon />
-                        </Tooltip>
-                    </IconButton>
-                  </TableCell>
+                  { (user?.levelId === USER_LEVEL_ADMIN) && ( <>
+                      <TableCell>
+                        <IconButton
+                          aria-label="action"
+                          onClick={() => {
+                            handleClickOpen(Number(row.id), row.email);
+                          }}
+                        >
+                          {row.status_id ===  USER_STATUS_NEW && 
+                          <Tooltip title="Activate"><ActivateIcon /></Tooltip>
+                          }
+                          {row.status_id ===  USER_STATUS_ACTIVE && 
+                          <Tooltip title="Inactivate"><DeactivateIcon /></Tooltip> }
+                          {row.status_id ===  USER_STATUS_INACTIVE && 
+                          <Tooltip title="Activate"><ActivateIcon /></Tooltip> }
+                          
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>
+                      <IconButton aria-label="update"
+                          onClick={() => { handleUpdateClick(Number(row.id)); }}>
+                            <Tooltip title="Change level or password">
+                              <UpdateIcon />
+                            </Tooltip>
+                        </IconButton>
+                      </TableCell>
+                    </> )}
                 </TableRow>
               );
             })}

@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import RouterLink from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/hooks/use-user';
 import Box from '@mui/material/Box';
-
 import IconButton from '@mui/material/IconButton';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
@@ -22,6 +23,7 @@ import { Pencil as UpdateIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths } from '@/paths';
+import {USER_LEVEL_ADMIN, USER_LEVEL_LEADER} from '@/constants'
 
 export interface ExternalDataset {
   id: string;
@@ -62,6 +64,9 @@ export function ExternalDatasetsTable({
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
 
+  const { user } = useUser();
+  const router = useRouter();
+
   return (
     <Card>
       <Box sx={{ overflowX: 'auto' }}>
@@ -85,8 +90,11 @@ export function ExternalDatasetsTable({
               <TableCell>Name</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>URL</TableCell>
+            { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+              <>
               <TableCell>Update</TableCell>
               <TableCell>Delete</TableCell>
+              </> )  }
             </TableRow>
           </TableHead>
           <TableBody>
@@ -110,7 +118,13 @@ export function ExternalDatasetsTable({
                   <TableCell>{row.id}</TableCell>
                   <TableCell>
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-                      <Typography variant="subtitle2">{row.name}</Typography>
+                      <Link
+                      variant="subtitle2"
+                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      onClick={() => router.push(paths.dashboard.externalDatasetDisplay(Number(row.id)))}
+                    >
+                      {row.name}
+                    </Link>
                     </Stack>
                   </TableCell>
                   <TableCell>{row.description}</TableCell>
@@ -123,22 +137,25 @@ export function ExternalDatasetsTable({
                     {row.url}
                   </Link>
                   </TableCell>
-                  <TableCell>
-                    <IconButton aria-label="update"
-                      onClick={() => { handleUpdateClick(Number(row.id)); }}>
-                      <UpdateIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="delete"
-                      onClick={() => {
-                        handleClickOpen(Number(row.id), row.name);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
+                  { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+                    <>
+                      <TableCell>
+                        <IconButton aria-label="update"
+                          onClick={() => { handleUpdateClick(Number(row.id)); }}>
+                          <UpdateIcon />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          aria-label="delete"
+                          onClick={() => {
+                            handleClickOpen(Number(row.id), row.name);
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </> )  }
                 </TableRow>
               );
             })}

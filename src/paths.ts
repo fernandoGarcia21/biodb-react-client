@@ -41,6 +41,14 @@ export const paths = {
     typeDatasets: '/dashboard/typedatasets',
     typeDatasetUpdate: (typeDatasetId: number | string) => `/dashboard/typedatasets/update/${typeDatasetId}`,
     typeDatasetCreate: '/dashboard/typedatasets/create',
+
+    //Paths to display pages instead of update
+    externalDatasetDisplay: (externalDatasetId: number | string) => `/dashboard/externaldatasets/display/${externalDatasetId}`,
+    locationDisplay: (locationId: number | string) => `/dashboard/location/display/${locationId}`,
+    projectDisplay: (projectId: number | string) => `/dashboard/projects/display/${projectId}`,
+    traitPropertiesDisplay: (propertyId: number | string) => `/dashboard/properties/display/${propertyId}`,
+    samplingAreaDisplay: (samplingAreaId: number | string) => `/dashboard/samplingarea/display/${samplingAreaId}`,
+    traitDisplay: (traitId: number | string) => `/dashboard/traits/display/${traitId}`,
   },
   errors: { notFound: '/errors/not-found' },
 } as const;

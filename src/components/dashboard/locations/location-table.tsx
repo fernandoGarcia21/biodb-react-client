@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import RouterLink from 'next/link';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
@@ -23,6 +24,8 @@ import { Eye as ViewIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths} from '@/paths';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export interface Location {
   id: string;
@@ -63,6 +66,8 @@ export function LocationsTable({
 
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
+  const { user } = useUser();
+  const router = useRouter();
 
   return (
     <Card>
@@ -86,8 +91,10 @@ export function LocationsTable({
               <TableCell>Id</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Country</TableCell>
-              <TableCell>Update</TableCell>
-              <TableCell>Delete</TableCell>
+              {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                <TableCell>Update</TableCell>
+                <TableCell>Delete</TableCell>
+              </>)}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -111,31 +118,39 @@ export function LocationsTable({
                   <TableCell>{row.id}</TableCell>
                   <TableCell>
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-                      <Typography variant="subtitle2">{row.name}</Typography>
+                      <Link
+                      variant="subtitle2"
+                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      onClick={() => router.push(paths.dashboard.locationDisplay(Number(row.id)))}
+                    >
+                      {row.name}
+                    </Link>
                     </Stack>
                   </TableCell>
                   <TableCell>{row.country_name}</TableCell>
-                  <TableCell>
-                  <IconButton aria-label="update"
-                      onClick={() => { handleUpdateClick(Number(row.id)); }}>
-                        <Tooltip title="Edit">
-                          <UpdateIcon />
+                  {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                    <TableCell>
+                      <IconButton aria-label="update"
+                        onClick={() => { handleUpdateClick(Number(row.id)); }}>
+                          <Tooltip title="Edit">
+                            <UpdateIcon />
+                          </Tooltip>
+                        
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        aria-label="delete"
+                        onClick={() => {
+                          handleDeleteClickOpen(Number(row.id), row.name);
+                        }}
+                      >
+                        <Tooltip title="Delete">
+                          <DeleteIcon />
                         </Tooltip>
-                      
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="delete"
-                      onClick={() => {
-                        handleDeleteClickOpen(Number(row.id), row.name);
-                      }}
-                    >
-                      <Tooltip title="Delete">
-                        <DeleteIcon />
-                      </Tooltip>
-                    </IconButton>
-                  </TableCell>
+                      </IconButton>
+                    </TableCell>
+                  </>)}
                 </TableRow>
               );
             })}

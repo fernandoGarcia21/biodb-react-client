@@ -20,6 +20,8 @@ import { ProjectsFilters } from '@/components/dashboard/projects/projects-filter
 import { ProjectsTable } from '@/components/dashboard/projects/projects-table';
 import type { Project } from '@/components/dashboard/projects/projects-table';
 import { paths } from '@/paths';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 import { getProjectsRequest, deleteProjectRequest } from '@/api/projects';
 
@@ -27,6 +29,7 @@ export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
   const isMounted = useRef(false);
+  const { user } = useUser();
 
   const fetchProjects = async () => {
     try {
@@ -142,22 +145,16 @@ export default function Page(): React.JSX.Element {
         <Stack direction="row" spacing={3}>
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">Projects list</Typography>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Import
-              </Button>
-              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
-              </Button>
-            </Stack>
           </Stack>
-          <div>
-            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
-              Add
-            </Button>
-          </div>
+          { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+            <div>
+              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
+                Add
+              </Button>
+            </div>
+          )}
         </Stack>
-        <ProjectsFilters />
+        {/**<ProjectsFilters /> */}
         <ProjectsTable
           count={projects.length}
           page={page}

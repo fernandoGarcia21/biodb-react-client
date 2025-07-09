@@ -23,6 +23,9 @@ import { Eye as ViewIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths} from '@/paths';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
+import { useRouter } from 'next/navigation';
 
 export interface SamplingArea {
   id: string;
@@ -63,6 +66,8 @@ export function SamplingAreasTable({
 
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
+  const { user } = useUser();
+  const router = useRouter();
 
   return (
     <Card>
@@ -90,8 +95,10 @@ export function SamplingAreasTable({
               <TableCell>Latitude</TableCell>
               <TableCell>Longitude</TableCell>
               <TableCell>Description</TableCell>
-              <TableCell>Update</TableCell>
-              <TableCell>Delete</TableCell>
+              {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                <TableCell>Update</TableCell>
+                <TableCell>Delete</TableCell>
+              </>)}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -115,7 +122,13 @@ export function SamplingAreasTable({
                   <TableCell>{row.id}</TableCell>
                   <TableCell>
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-                      <Typography variant="subtitle2">{row.name}</Typography>
+                      <Link
+                      variant="subtitle2"
+                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      onClick={() => router.push(paths.dashboard.samplingAreaDisplay(Number(row.id)))}
+                    >
+                      {row.name}
+                    </Link>
                     </Stack>
                   </TableCell>
                   <TableCell>{row.country_name}</TableCell>
@@ -123,27 +136,29 @@ export function SamplingAreasTable({
                   <TableCell>{row.latitude}</TableCell>
                   <TableCell>{row.longitude}</TableCell>
                   <TableCell>{row.description}</TableCell>
-                  <TableCell>
-                  <IconButton aria-label="update"
-                      onClick={() => { handleUpdateClick(Number(row.id)); }}>
-                        <Tooltip title="Edit">
-                          <UpdateIcon />
+                  {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                    <TableCell>
+                      <IconButton aria-label="update"
+                        onClick={() => { handleUpdateClick(Number(row.id)); }}>
+                          <Tooltip title="Edit">
+                            <UpdateIcon />
+                          </Tooltip>
+                        
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        aria-label="delete"
+                        onClick={() => {
+                          handleDeleteClickOpen(Number(row.id), row.name);
+                        }}
+                      >
+                        <Tooltip title="Delete">
+                          <DeleteIcon />
                         </Tooltip>
-                      
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="delete"
-                      onClick={() => {
-                        handleDeleteClickOpen(Number(row.id), row.name);
-                      }}
-                    >
-                      <Tooltip title="Delete">
-                        <DeleteIcon />
-                      </Tooltip>
-                    </IconButton>
-                  </TableCell>
+                      </IconButton>
+                    </TableCell>
+                  </>)}
                 </TableRow>
               );
             })}

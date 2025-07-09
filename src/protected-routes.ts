@@ -42,21 +42,6 @@ export const protectedRoutes = [
         requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
       },
       {
-      path: '/dashboard/persons',
-      navItemKey: 'persons',
-      requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
-    },
-    {
-        path: '/dashboard/persons/create',
-        navItemKey: '',
-        requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
-      },
-    {
-      path: '/dashboard/persons/update/:id',
-      navItemKey: '',
-      requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
-    },
-      {
           path: '/dashboard/species/create',
           navItemKey: '',
           requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.

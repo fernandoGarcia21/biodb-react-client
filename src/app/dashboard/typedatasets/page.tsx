@@ -21,11 +21,14 @@ import type { TypeDataset } from '@/components/dashboard/typedatasets/typedatase
 import { paths } from '@/paths';
 
 import { getTypeDatasetsRequest, deleteTypeDatasetRequest } from '@/api/typeDatasets';
+import { USER_LEVEL_ADMIN } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [typeDatasets, setTypeDatasets] = useState([]);
   const isMounted = useRef(false);
+  const { user } = useUser();
 
   const fetchTypeDatasets = async () => {
     try {
@@ -142,11 +145,13 @@ export default function Page(): React.JSX.Element {
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">Type Datasets list</Typography>
           </Stack>
-          <div>
-            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
-              Add
-            </Button>
-          </div>
+          {user?.levelId === USER_LEVEL_ADMIN && (
+            <div>
+              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
+                Add
+              </Button>
+            </div>
+          )}
         </Stack>
         <TypeDatasetsTable
           count={typeDatasets.length}

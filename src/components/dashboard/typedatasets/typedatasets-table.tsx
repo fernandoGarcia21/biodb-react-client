@@ -22,6 +22,8 @@ import { Pencil as UpdateIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths } from '@/paths';
+import { USER_LEVEL_ADMIN } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export interface TypeDataset {
   id: string;
@@ -58,6 +60,8 @@ export function TypeDatasetsTable({
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
 
+  const { user } = useUser();
+
   return (
     <Card>
       <Box sx={{ overflowX: 'auto' }}>
@@ -79,8 +83,13 @@ export function TypeDatasetsTable({
               </TableCell>
               <TableCell>Id</TableCell>
               <TableCell>Name</TableCell>
-              <TableCell>Update</TableCell>
-              <TableCell>Delete</TableCell>
+              {user?.levelId === USER_LEVEL_ADMIN && (
+                <>
+                  <TableCell>Update</TableCell>
+                  <TableCell>Delete</TableCell>
+                </>
+              )}
+              
             </TableRow>
           </TableHead>
           <TableBody>
@@ -107,6 +116,9 @@ export function TypeDatasetsTable({
                       <Typography variant="subtitle2">{row.name}</Typography>
                     </Stack>
                   </TableCell>
+
+                  {user?.levelId === USER_LEVEL_ADMIN && (
+                <>
                   <TableCell>
                     <IconButton aria-label="update"
                       onClick={() => { handleUpdateClick(Number(row.id)); }}>
@@ -123,6 +135,8 @@ export function TypeDatasetsTable({
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
+                </>
+              )}
                 </TableRow>
               );
             })}

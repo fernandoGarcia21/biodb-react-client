@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import RouterLink from 'next/link';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-
+import Link from '@mui/material/Link';
 import IconButton from '@mui/material/IconButton';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
@@ -23,6 +24,8 @@ import { BookOpenText as ProtocolIcon } from '@phosphor-icons/react/dist/ssr/Boo
 
 import { paths } from '@/paths';
 import { useSelection } from '@/hooks/use-selection';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export interface Property {
   id: string;
@@ -67,6 +70,8 @@ export function PropertiesTable({
 
   const selectedSome = (selected?.size ?? 0) > 0 && (selected?.size ?? 0) < rows.length;
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
+  const { user } = useUser();
+  const router = useRouter();
 
   return (
     <Card>
@@ -94,8 +99,10 @@ export function PropertiesTable({
               <TableCell>Pre-defined values</TableCell>
               {showTraitName && <TableCell>Trait</TableCell>}
               <TableCell>Protocol</TableCell>
-              <TableCell>Update</TableCell>
-              <TableCell>Delete</TableCell>
+              {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                <TableCell>Update</TableCell>
+                <TableCell>Delete</TableCell>
+              </>)}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -118,7 +125,13 @@ export function PropertiesTable({
                   </TableCell>
                   <TableCell>
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-                      <Typography variant="subtitle2">{row.name}</Typography>
+                      <Link
+                      variant="subtitle2"
+                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      onClick={() => router.push(paths.dashboard.traitPropertiesDisplay(Number(row.id)))}
+                    >
+                      {row.name}
+                    </Link>
                     </Stack>
                   </TableCell>
                   <TableCell>{row.description}</TableCell>
@@ -144,22 +157,24 @@ export function PropertiesTable({
                       <ProtocolIcon />
                     </IconButton>
                   </TableCell>
-                  <TableCell>
-                    <IconButton aria-label="update"
-                      onClick={() => { handleUpdateClick(Number(row.id)); }}>
-                      <UpdateIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="delete"
-                      onClick={() => {
-                        handleDeleteClickOpen(Number(row.id), row.name);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
+                  {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && <>
+                    <TableCell>
+                      <IconButton aria-label="update"
+                        onClick={() => { handleUpdateClick(Number(row.id)); }}>
+                        <UpdateIcon />
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        aria-label="delete"
+                        onClick={() => {
+                          handleDeleteClickOpen(Number(row.id), row.name);
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </>}
                 </TableRow>
               );
             })}

@@ -65,24 +65,13 @@ export function ExternalDatasetsTable({
         <Table sx={{ minWidth: '800px' }}>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selectedAll}
-                  indeterminate={selectedSome}
-                  onChange={(event) => {
-                    if (event.target.checked) {
-                      selectAll();
-                    } else {
-                      deselectAll();
-                    }
-                  }}
-                />
-              </TableCell>
               <TableCell>Id</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Type dataset</TableCell>
               <TableCell>URL</TableCell>
-              <TableCell>Delete</TableCell>
+              {handleClickOpen && (
+                <TableCell>Delete</TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -91,18 +80,6 @@ export function ExternalDatasetsTable({
 
               return (
                 <TableRow hover key={row.id} selected={isSelected}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={(event) => {
-                        if (event.target.checked) {
-                          selectOne(row.id);
-                        } else {
-                          deselectOne(row.id);
-                        }
-                      }}
-                    />
-                  </TableCell>
                   <TableCell>{row.id}</TableCell>
                   <TableCell>
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
@@ -111,16 +88,18 @@ export function ExternalDatasetsTable({
                   </TableCell>
                   <TableCell>{row.type_dataset_name}</TableCell>
                   <TableCell>{row.url}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      aria-label="delete"
-                      onClick={() => {
-                        handleClickOpen(Number(row.id), row.dataset_name);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
+                  {handleClickOpen && (
+                    <TableCell>
+                        <IconButton
+                        aria-label="delete"
+                        onClick={() => {
+                          handleClickOpen(Number(row.id), row.dataset_name);
+                        }}
+                      >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    )}
                 </TableRow>
               );
             })}

@@ -95,14 +95,6 @@ export default function Page(): React.JSX.Element {
         <Stack direction="row" spacing={3}>
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">Batch processes</Typography>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Import
-              </Button>
-              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
-              </Button>
-            </Stack>
           </Stack>
           <div>
             <Button onClick={handleRefreshViewsClick} startIcon={<ArrowClockwiseIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" color='warning'>
@@ -110,11 +102,11 @@ export default function Page(): React.JSX.Element {
             </Button>
           </div>
         </Stack>
-        <Stack spacing={3} sx={{ mt: 2 }}>
+        <Stack spacing={3} sx={{ mt: 1 }}>
             {errors.root ? <Alert color="error">{errors.root.message}</Alert> : null}
             {successMessage ? <Alert color="success">{successMessage}</Alert> : null}
         </Stack>
-        <BatchFilters />
+        {/**<BatchFilters /> */}
         <BatchTable
           count={batches.length}
           page={page}

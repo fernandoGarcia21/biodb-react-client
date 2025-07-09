@@ -29,7 +29,7 @@ export function GuestGuard({ children }: GuestGuardProps): React.JSX.Element | n
 
     if (user) {
       logger.debug('[GuestGuard]: User is logged in, redirecting to dashboard');
-      router.replace(paths.dashboard.organisms);
+      router.replace(paths.dashboard.overview);
       return;
     }
 

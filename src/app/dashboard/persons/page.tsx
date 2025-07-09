@@ -38,6 +38,8 @@ import { paths } from '@/paths';
 import { getPersonsRequest, deletePersonRequest } from '@/api/persons';
 import { getUserLevelsRequest } from '@/api/userLevels';
 import { createUserRequest } from '@/api/users';
+import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { useUser } from '@/hooks/use-user';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
@@ -49,6 +51,7 @@ export default function Page(): React.JSX.Element {
   const [ errorMessageUser, setErrorMessageUser ] = React.useState({  user_level_id: '', password: '' });
   const [userLevel, setUserLevel] = React.useState(0);
   const [userPassword, setUserPassword] = React.useState('');
+  const { user } = useUser();
 
   const fetchPersons = async () => {
     try {
@@ -286,22 +289,16 @@ export default function Page(): React.JSX.Element {
         <Stack direction="row" spacing={3}>
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">Persons list</Typography>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Import
-              </Button>
-              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
-              </Button>
-            </Stack>
           </Stack>
-          <div>
-            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
-              Add
-            </Button>
-          </div>
+          { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+            <div>
+              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
+                Add
+              </Button>
+            </div>
+          )}
         </Stack>
-        <PersonsFilters />
+        {/**<PersonsFilters />  */}
         <PersonsTable
           count={persons.length}
           page={page}
