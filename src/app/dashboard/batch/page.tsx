@@ -1,29 +1,35 @@
 "use client";
 import * as React from 'react';
 import {useEffect, useState, useRef} from 'react';
+import { useRouter } from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { Download as DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
 import { ArrowClockwise as ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowClockwise';
-import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 import { config } from '@/config';
-import { BatchFilters } from '@/components/dashboard/upload/batch-filters';
 import { BatchTable } from '@/components/dashboard/upload/batch-table';
 import type { Batch } from '@/components/dashboard/upload/batch-table';
 import { useForm } from 'react-hook-form';
+import { AxiosError } from 'axios' 
+import { paths } from '@/paths';
+import { useUser } from '@/hooks/use-user';
+import { USER_LEVEL_ADMIN } from '@/constants';
+import { useBrandTitle } from '@/hooks/use-brand-title';
  
 import { getBatchProcessesRequest, refreshMaterializedViewsRequest } from '@/api/batch';
 
 export default function Page(): React.JSX.Element {
-
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const router = useRouter();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const { setError, 
     formState: { errors } 
   } = useForm();
+
+  const { user } = useUser();
   const [batches, setBatches] = useState([]);
   const isMounted = useRef(false);
+  const brandTitle = useBrandTitle();
 
   const fetchBatches = async () => {
       try {
@@ -51,8 +57,8 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Batch | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Batch | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   //Define the event handler for the refresh materialized views button
@@ -61,7 +67,7 @@ export default function Page(): React.JSX.Element {
       const res = await refreshMaterializedViewsRequest();
       setSuccessMessage(res.data);
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
           const errorMessage = JSON.parse(error.request.response).message;
           setError('root', { type: 'server', message: String(errorMessage) });
         } else {
@@ -85,10 +91,14 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };
+
+  const handleReviewClick = (idBatch: number) => {
+        router.push(paths.dashboard.batchReview(idBatch));
+      };
 
   return (
       <Stack spacing={3}>
@@ -97,9 +107,11 @@ export default function Page(): React.JSX.Element {
             <Typography variant="h4">Batch processes</Typography>
           </Stack>
           <div>
-            <Button onClick={handleRefreshViewsClick} startIcon={<ArrowClockwiseIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" color='warning'>
-              Refresh materialized views
-            </Button>
+            {user?.levelId === USER_LEVEL_ADMIN && (
+              <Button onClick={handleRefreshViewsClick} startIcon={<ArrowClockwiseIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" color='warning'>
+                Refresh materialized views
+              </Button>
+            )}
           </div>
         </Stack>
         <Stack spacing={3} sx={{ mt: 1 }}>
@@ -114,6 +126,7 @@ export default function Page(): React.JSX.Element {
           rowsPerPage={rowsPerPage}
           myRowsPerPageChangeEvent={handleChangeRowsPerPage}
           myPageChangeEvent={handleChangePage}
+          handleReviewClick={handleReviewClick}
         />
       </Stack>
   );

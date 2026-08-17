@@ -18,7 +18,7 @@ import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Visibility from '@mui/icons-material/Visibility';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -26,6 +26,8 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getUserNamesRequest, updateUserRequest, updatePasswordRequest } from '@/api/users';
 import { getUserLevelsRequest } from '@/api/userLevels';
@@ -40,6 +42,7 @@ type Values = zod.infer<typeof schema>;
 
 export function UpdateUserForm(): React.JSX.Element {
   const router = useRouter();
+  const brandTitle = useBrandTitle();
 
   const {
     control,
@@ -60,8 +63,8 @@ export function UpdateUserForm(): React.JSX.Element {
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const params = useParams<{ id: int }>();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const params = useParams<{ id: string }>();
   const [userId, setUserId] = useState(params.id);
   const [personName, setPersonName] = useState('');
   const [email, setEmail] = useState('');
@@ -89,7 +92,7 @@ export function UpdateUserForm(): React.JSX.Element {
               setUserStatusId(responseUser.data[0].status_id);
               setPassword('');
 
-              document.title = `Update user: ${responseUser.data[0].first_name} ${responseUser.data[0].family_name} | Dashboard | ${config.site.name}`;
+              document.title = `Update user: ${responseUser.data[0].first_name} ${responseUser.data[0].family_name} | ${brandTitle}`;
             }
 
             //Fetch user levels info
@@ -127,7 +130,7 @@ export function UpdateUserForm(): React.JSX.Element {
           }
           
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -166,7 +169,7 @@ export function UpdateUserForm(): React.JSX.Element {
           }
           
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -198,8 +201,8 @@ export function UpdateUserForm(): React.JSX.Element {
   
   
     //Reset the error messages of the add user dialog
-      const onChangeUserLevel = (event: React.ChangeEvent<{ value: unknown }>) => {
-        const newUserLevel = event.target.value as number;
+      const onChangeUserLevel = (event: SelectChangeEvent<number>) => {
+        const newUserLevel = Number(event.target.value);
         setUserLevelId(newUserLevel);
         setErrorMessageUser({ ...errorMessageUser, user_level_id: '' });
         setErrorsUser({ ...errorsUser, user_level_id: false });
@@ -249,7 +252,7 @@ export function UpdateUserForm(): React.JSX.Element {
           
 
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
-                <FormControl  sx={{ m: 1}} fullWidth error={Boolean(errorsUser.password)} sx={{ mt: 2 }}>
+                <FormControl  sx={{ m: 1, mt: 2}} fullWidth error={Boolean(errorsUser.password)}>
                     <InputLabel>Password</InputLabel>
                     <OutlinedInput 
                     label="Password" 

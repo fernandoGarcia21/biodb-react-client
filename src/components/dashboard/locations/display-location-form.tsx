@@ -14,8 +14,10 @@ import Stack from '@mui/material/Stack';
 import { z as zod } from 'zod';
 import { config } from '@/config';
 import {Typography} from '@mui/material';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getLocationRequest } from '@/api/locations';
+
 
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }).max(255, { message: 'Name is too long' }),
@@ -47,10 +49,10 @@ export function DisplayLocationForm(): React.JSX.Element {
     },
    });
 
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const [locationId, setLocationId] = useState(params.id);
   const [locationName, setLocationName] = useState<string>('');
-
+  const brandTitle = useBrandTitle();
   const isMounted = useRef(false);
   
   useEffect(() => {
@@ -67,7 +69,7 @@ export function DisplayLocationForm(): React.JSX.Element {
                       extra_info: responseLocation.data[0].extra_info });
 
               setLocationName(responseLocation.data[0].name);
-              document.title = `Display Location: ${responseLocation.data[0].name} | Dashboard | ${config.site.name}`;
+              document.title = `Display Location: ${responseLocation.data[0].name} | ${brandTitle}`;
             }
 
           }

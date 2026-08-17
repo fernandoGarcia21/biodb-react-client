@@ -18,8 +18,9 @@ import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import { AxiosError } from 'axios';
 
 
 import { Link as ExternalDatasetIcon } from '@phosphor-icons/react/dist/ssr/Link';
@@ -30,14 +31,16 @@ import { ExternalDatasetsTable } from '@/components/dashboard/externaldatasets/p
 import type { ExternalDataset } from '@/components/dashboard/externaldatasets/project-externaldatasets-table';
 
 import { getProjectExternalDatasetsRequest, getAvailableProjectExternalDatasetsRequest, createProjectExternalDatasetRequest, deleteProjectExternalDatasetRequest } from  '@/api/projects';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
 
   const router = useRouter();
   const [projectExternalDatasets, setProjectExternalDatasets] = useState([]);
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const pProjectId = params.id; //Obtain the project id from the URL
   const isMounted = useRef(false);
+  const brandTitle = useBrandTitle();
 
   const [ errorsExternalDataset, setErrorsExternalDataset ] = React.useState({  external_dataset_id: false});
   const [ errorMessageExternalDataset, setErrorMessageExternalDataset ] = React.useState({  external_dataset_id: '' });
@@ -71,18 +74,18 @@ export default function Page(): React.JSX.Element {
   
       //Add title to the page
         useEffect(() => {
-          document.title = `Update | Project | Dashboard | ${config.site.name}`;
-        }, []);
+          document.title = `Update | Project | ${brandTitle}`;
+        }, [brandTitle]);
       
   
        //State for the operation result messages
-        const [successMessage, setSuccessMessage] = React.useState(null);
-        const [errorMessage, setErrorMessage] = React.useState(null);
+        const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+        const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
       
         //Code for the delete dialog
         const [open, setOpen] = React.useState(false);
         const [deleteName, setDeleteName] = React.useState("");
-        const [deleteId, setDeleteId] = React.useState(null); //Property ID to delete
+        const [deleteId, setDeleteId] = React.useState<number | null>(null); //Property ID to delete
         const errorRef = React.useRef<HTMLDivElement>(null);
       
         const handleClickOpen = (idExternalDataset: number, nameExternalDataset: string) => {
@@ -114,7 +117,7 @@ export default function Page(): React.JSX.Element {
               throw new Error('ID of the object is null or undefined when trying to delete');
             }
           }catch(error){
-            if (error instanceof Error && error.request && error.request.response) {
+            if (error instanceof AxiosError && error.request && error.request.response) {
               const errorMessage = JSON.parse(error.request.response).message;
               setErrorMessage(String(errorMessage));
             } else {
@@ -179,7 +182,7 @@ export default function Page(): React.JSX.Element {
             }
           }
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setErrorMessage(String(errorMessage));
           } else {
@@ -195,8 +198,8 @@ export default function Page(): React.JSX.Element {
       };
     
       //Reset the error messages of the add external dataset dialog
-      const onChangeExternalDataset = (event: React.ChangeEvent<{ value: unknown }>) => {
-        const newExternalDatasetId = event.target.value as number;
+      const onChangeExternalDataset = (event: SelectChangeEvent<number>) => {
+        const newExternalDatasetId = Number(event.target.value);
         setExternalDatasetId(newExternalDatasetId);
         setErrorMessageExternalDataset({ ...errorMessageExternalDataset, external_dataset_id: '' });
         setErrorsExternalDataset({ ...errorsExternalDataset, external_dataset_id: false });
@@ -212,7 +215,7 @@ export default function Page(): React.JSX.Element {
 
       <Stack direction="row" spacing={3}>
           <div>
-            <Button variant="contained" color="inherit" onClick={handleClickOpenAddExternalDataset} startIcon={<ExternalDatasetIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
+            <Button variant="contained" color="inherit" onClick={handleClickOpenAddExternalDataset} startIcon={<ExternalDatasetIcon fontSize="var(--icon-fontSize-md)" />}>
               Associate external dataset
             </Button>
           </div>

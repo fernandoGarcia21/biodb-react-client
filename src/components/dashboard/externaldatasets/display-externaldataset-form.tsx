@@ -15,6 +15,7 @@ import { z as zod } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { config } from '@/config';
 import { getExternalDatasetRequest } from '@/api/externalDatasets';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }),
@@ -42,9 +43,10 @@ export function DisplayExternalDatasetForm(): React.JSX.Element {
     },
   });
 
-  const params = useParams<{ id: number }>();
+  const params = useParams<{ id: string }>();
   const externalDatasetId = params.id;
   const isMounted = useRef(false);
+  const brandTitle = useBrandTitle();
 
   useEffect(() => {
     const fetchExternalDataset = async () => {
@@ -60,7 +62,7 @@ export function DisplayExternalDatasetForm(): React.JSX.Element {
               type_dataset_id: response.data[0].type_dataset_id,
               type_dataset_name: response.data[0].type_dataset_name,
             });
-            document.title = `Display External Dataset: ${response.data[0].name} | Dashboard | ${config.site.name}`;
+            document.title = `Display External Dataset: ${response.data[0].name} | ${brandTitle}`;
           }
         }
       } catch (error) {

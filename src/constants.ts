@@ -1,7 +1,7 @@
 // This file contains all the constants that are used in the application
 
 //The URL of the backend API
-//const API = 'http://localhost:3000';
+//export const API = 'https://www.littorinadb.com/api'; //PROD
 //const API = 'http://10.41.170.35:3000'; WLAN
 //const API = 'http://192.168.144.5:3000'; //PHONE
 export const API = 'http://localhost:3000';
@@ -69,4 +69,12 @@ export const USER_LEVEL_ADMIN = 1;
 export const USER_LEVEL_LEADER = 2;
 export const USER_LEVEL_INVITED = 3;
 
+export const BU_STATUS_SUBMITTED = 1; //Status of the batch upload process when it is submitted and waiting to be processed
+export const BU_STATUS_APPROVED = 6; //Status of the batch upload process when it is approved by the curator and ready to be processed
+export const BU_STATUS_REJECTED = 7; //Status of the batch upload process when it is rejected by the curator and not processed
+
+//The URL of the backend API for images
 export const BACKEND_ENDPOINT_URL_IMAGES = `${API}/images/`;
+
+export const SETTINGS_DB_NAME = 'DB_NAME';
+export const SETTINGS_DB_NAME_SUFFIX = 'DB_NAME_SUFFIX';

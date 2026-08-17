@@ -32,6 +32,9 @@ export interface ExternalDataset {
   owner_person_id: string;
   owner_person_name: string;
   owner_person_email: string;
+  type_dataset_id: string;
+  type_dataset_name: string;
+  url: string;
 }
 
 interface ExternalDatasetTableProps {
@@ -40,7 +43,7 @@ interface ExternalDatasetTableProps {
   rows?: ExternalDataset[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
   handleClickOpen: (id: number, name: string) => void;
   handleUpdateClick: (id: number) => void;
 }
@@ -55,9 +58,20 @@ export function ExternalDatasetsTable({
   handleClickOpen,
   handleUpdateClick,
 }: ExternalDatasetTableProps): React.JSX.Element {
+  const DESCRIPTION_PREVIEW_LENGTH = 140;
+  const topScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const tableScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const [topScrollbarWidth, setTopScrollbarWidth] = React.useState(0);
+
   const rowIds = React.useMemo(() => {
     return rows.map((externalDataset) => externalDataset.id);
   }, [rows]);
+
+  const [expandedDescriptions, setExpandedDescriptions] = React.useState<Record<string, boolean>>({});
+
+  const toggleDescription = React.useCallback((datasetId: string) => {
+    setExpandedDescriptions((prev) => ({ ...prev, [datasetId]: !prev[datasetId] }));
+  }, []);
 
   const { selectAll, deselectAll, selectOne, deselectOne, selected } = useSelection(rowIds);
 
@@ -67,9 +81,78 @@ export function ExternalDatasetsTable({
   const { user } = useUser();
   const router = useRouter();
 
+  React.useEffect(() => {
+    const topScroll = topScrollRef.current;
+    const tableScroll = tableScrollRef.current;
+
+    if (!topScroll || !tableScroll) {
+      return;
+    }
+
+    const syncFromTop = () => {
+      tableScroll.scrollLeft = topScroll.scrollLeft;
+    };
+
+    const syncFromTable = () => {
+      topScroll.scrollLeft = tableScroll.scrollLeft;
+    };
+
+    const updateScrollbarWidth = () => {
+      const tableEl = tableScroll.querySelector('table');
+      setTopScrollbarWidth(tableEl ? tableEl.scrollWidth : tableScroll.scrollWidth);
+    };
+
+    topScroll.addEventListener('scroll', syncFromTop);
+    tableScroll.addEventListener('scroll', syncFromTable);
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollbarWidth();
+    });
+
+    const tableEl = tableScroll.querySelector('table');
+    resizeObserver.observe(tableScroll);
+    if (tableEl) {
+      resizeObserver.observe(tableEl);
+    }
+
+    window.addEventListener('resize', updateScrollbarWidth);
+    updateScrollbarWidth();
+
+    return () => {
+      topScroll.removeEventListener('scroll', syncFromTop);
+      tableScroll.removeEventListener('scroll', syncFromTable);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateScrollbarWidth);
+    };
+  }, [rows.length, rowsPerPage]);
+
   return (
     <Card>
-      <Box sx={{ overflowX: 'auto' }}>
+      <Box
+        ref={topScrollRef}
+        sx={{
+          overflowX: 'scroll',
+          overflowY: 'hidden',
+          height: 16,
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': {
+            height: 12,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'rgba(0, 0, 0, 0.08)',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.35)',
+            borderRadius: 8,
+          },
+        }}
+      >
+        <Box sx={{ width: topScrollbarWidth || '100%', height: 1 }} />
+      </Box>
+      <Box ref={tableScrollRef} sx={{ overflowX: 'auto' }}>
         <Table sx={{ minWidth: '800px' }}>
           <TableHead>
             <TableRow>
@@ -90,6 +173,8 @@ export function ExternalDatasetsTable({
               <TableCell>Name</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>URL</TableCell>
+              <TableCell>Type dataset</TableCell>
+              <TableCell>Uploaded by</TableCell>
             { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
               <>
               <TableCell>Update</TableCell>
@@ -120,14 +205,47 @@ export function ExternalDatasetsTable({
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
                       <Link
                       variant="subtitle2"
-                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      sx={{ cursor: 'pointer', textDecoration: 'none', p: 0, m: 0, background: 'none', border: 'none' }}
                       onClick={() => router.push(paths.dashboard.externalDatasetDisplay(Number(row.id)))}
                     >
                       {row.name}
                     </Link>
                     </Stack>
                   </TableCell>
-                  <TableCell>{row.description}</TableCell>
+                  <TableCell sx={{ minWidth: 300, maxWidth: 420 }}>
+                    {(() => {
+                      const description = row.description ?? '';
+                      const isExpanded = Boolean(expandedDescriptions[row.id]);
+                      const shouldTruncate = description.length > DESCRIPTION_PREVIEW_LENGTH;
+                      const text = shouldTruncate && !isExpanded
+                        ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH)}...`
+                        : description;
+
+                      return (
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {text}
+                          {shouldTruncate ? (
+                            <Box
+                              component="button"
+                              type="button"
+                              onClick={() => { toggleDescription(row.id); }}
+                              sx={{
+                                ml: 1,
+                                p: 0,
+                                border: 'none',
+                                background: 'none',
+                                color: 'primary.main',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {isExpanded ? 'Read less' : 'Read more'}
+                            </Box>
+                          ) : null}
+                        </Typography>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell>
                     <Link
                     href={`${row.url}`}
@@ -136,9 +254,14 @@ export function ExternalDatasetsTable({
                   >
                     {row.url}
                   </Link>
+                  
                   </TableCell>
-                  { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+                  <TableCell>{row.type_dataset_name}</TableCell>
+                  <TableCell>{row.owner_person_name}</TableCell>
+                   { (user?.levelId === USER_LEVEL_ADMIN 
+                                      || (user?.levelId === USER_LEVEL_LEADER && row.owner_person_id === user?.personId)) && ( 
                     <>
+                                        
                       <TableCell>
                         <IconButton aria-label="update"
                           onClick={() => { handleUpdateClick(Number(row.id)); }}>
@@ -166,7 +289,7 @@ export function ExternalDatasetsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

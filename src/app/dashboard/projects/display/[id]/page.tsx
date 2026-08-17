@@ -30,12 +30,14 @@ import { ExternalDatasetsTable } from '@/components/dashboard/externaldatasets/p
 import type { ExternalDataset } from '@/components/dashboard/externaldatasets/project-externaldatasets-table';
 
 import { getProjectExternalDatasetsRequest, getAvailableProjectExternalDatasetsRequest, createProjectExternalDatasetRequest, deleteProjectExternalDatasetRequest } from  '@/api/projects';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
+  const brandTitle = useBrandTitle();
 export default function Page(): React.JSX.Element {
 
   const router = useRouter();
   const [projectExternalDatasets, setProjectExternalDatasets] = useState([]);
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const pProjectId = params.id; //Obtain the project id from the URL
   const isMounted = useRef(false);
 
@@ -71,8 +73,8 @@ export default function Page(): React.JSX.Element {
   
       //Add title to the page
         useEffect(() => {
-          document.title = `Update | Project | Dashboard | ${config.site.name}`;
-        }, []);
+          document.title = `Update | Project | ${brandTitle}`;
+        }, [brandTitle]);
       
   return (
     <Stack spacing={3}>
@@ -90,6 +92,7 @@ export default function Page(): React.JSX.Element {
                 count={projectExternalDatasets.length}
                 page={0}
                 rows={projectExternalDatasets}
+                handleClickOpen={() => {}}
               />
     </Stack>
   );

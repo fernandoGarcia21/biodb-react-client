@@ -9,3 +9,4 @@ export const getProjectExternalDatasetsRequest = (projectId) => axios.get(`/proj
 export const getAvailableProjectExternalDatasetsRequest = (projectId) => axios.get(`/project/${projectId}/available_external_datasets`);
 export const createProjectExternalDatasetRequest = (projectId, externalDatasetId) => axios.post(`/project/${projectId}/external_datasets`, { external_dataset_id: externalDatasetId });
 export const deleteProjectExternalDatasetRequest = (projectExternalDatasetId) => axios.delete(`/project/${projectExternalDatasetId}/external_datasets`);
+export const getProjectsMustReadRequest = (projectIds) => axios.get(`/projects/must_read/${projectIds}`);

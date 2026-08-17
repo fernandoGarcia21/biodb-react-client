@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {useState, useEffect} from 'react';
+import Alert from '@mui/material/Alert';
 import Card from '@mui/material/Card';
 import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
@@ -31,11 +32,10 @@ import TextField from '@mui/material/TextField';
 import { CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, CheckBox as CheckBoxIcon } from '@mui/icons-material';
 
 //Icons
-import { Trash as DeleteIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { Funnel as FilterIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { Plus as AddIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { Button } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 
 import { LIST_QUERY_OPERATIONS, 
          LIST_RELATION_DATA_TYPE_OPERATION, 
@@ -45,19 +45,53 @@ import { LIST_QUERY_OPERATIONS,
          DATE_FORMAT_TEMPLATE } from '@/constants';
 
 
+// Define types for trait property and grouped trait property
+  type TraitProperty = {
+    trait_id: number;
+    trait_name: string;
+    trait_type_id: number;
+    trait_type_name: string;
+    property_id: number;
+    property_name: string;
+    data_type_id: number;
+    data_type_name: string;
+  };
+
+  type GroupedTraitProperty = {
+    trait_id: number;
+    trait_name: string;
+    trait_type_id: number;
+    trait_type_name: string;
+    properties: Array<{
+      property_id: number;
+      property_name: string;
+      data_type_id: number;
+      data_type_name: string;
+    }>;
+  };
+
+type Species = {
+  id: string;
+  name: string;
+  internal_code: string;
+};
+
 interface OrganismsFiltersProps {
-  listLocations: [];
-  listSamplingAreas: [];
-  listSpecies: [];
-  listProjects: [];
-  listTraitProperties: [];
-  listPropertiesNoGroupped: [];
-  listTraitTypes: [];
+  listLocations: string [];
+  listHabitats: any [];
+  listSamplingAreas: any[]; // You may want to define a type for sampling areas as well
+  listSpecies: Species[];
+  listProjects: any[]; // You may want to define a type for projects as well
+  listTraitProperties: GroupedTraitProperty [];
+  listPropertiesNoGroupped: TraitProperty [];
+  listTraitTypes: string [];
+  initialSpeciesId?: string;
+  initialSamplingAreaId?: string;
+  initialLocationId?: string;
   handleFilterClick: (pFilterName : string, 
                       pInputSelectSpecies: string [],
-                      pInputSelectLocation: string [], 
-                      pInputSelectSamplingArea: string [], 
-                      pInputSelectProject: string [], 
+                      pInputSelectSamplingArea: string [],
+                      pInputSelectProject: string [],
                       pInputSelectPropertyValues: any [],
                       pInputSelectCondition: string,
                       pInputSelectedOutputProperties: number []) => void;
@@ -65,19 +99,24 @@ interface OrganismsFiltersProps {
 
 export function OrganismsFilters({
   listLocations,
+  listHabitats,
   listSamplingAreas,
   listSpecies,
   listProjects,
   listTraitProperties,
   listPropertiesNoGroupped,
   listTraitTypes,
+  initialSpeciesId,
+  initialSamplingAreaId,
+  initialLocationId,
   handleFilterClick,
 }:OrganismsFiltersProps): React.JSX.Element {
 
   const [inputOrganismNameFilter, setInputOrganismNameFilter] = useState<string>('');
-  const [inputSelectSpecies, setInputSelectSpecies] = React.useState<string[]>([]);
-  const [inputSelectLocation, setInputSelectLocation] = React.useState<string[]>([]);
-  const [inputSelectSamplingArea, setInputSelectSamplingArea] = React.useState<string[]>([]);
+  const [inputSelectSpecies, setInputSelectSpecies] = React.useState<string[]>(initialSpeciesId ? [initialSpeciesId] : []);
+  const [inputSelectHabitat, setInputSelectHabitat] = React.useState<string[]>([]);
+  const [inputSelectLocation, setInputSelectLocation] = React.useState<string[]>(initialLocationId ? [initialLocationId] : []);
+  const [inputSelectSamplingArea, setInputSelectSamplingArea] = React.useState<string[]>(initialSamplingAreaId ? [initialSamplingAreaId] : []);
   const [inputSelectProject, setInputSelectProject] = React.useState<string[]>([]);
   const [selectedPropertyValues, setSelectedPropertyValues] = React.useState<any>([]);
   const [inputSelectProperty, setInputSelectProperty] = React.useState<number>(0); 
@@ -89,13 +128,32 @@ export function OrganismsFilters({
   const [errorPropertyValue, setErrorPropertyValue] = useState('');
   const [inputDataType, setInputDataType] = useState<number>(0);
   const [inputDate, setInputDate] = useState<Dayjs | null>(dayjs());
-  const [selectedOutputProperties, setSelectedOutputProperties] = React.useState([]);
+  const [selectedOutputProperties, setSelectedOutputProperties] = React.useState<number[]>([]);
+  const [filtersApplied, setFiltersApplied] = useState<boolean>(true);
+
+  // Re-seed initial selections once the lists have loaded so types match the actual item ids.
+  useEffect(() => {
+    if (initialSpeciesId && listSpecies.length > 0) {
+      const match = listSpecies.find((s) => String(s.id) === String(initialSpeciesId));
+      if (match) setInputSelectSpecies([match.id]);
+    }
+  }, [listSpecies]);
+
+  useEffect(() => {
+    if (initialSamplingAreaId && listSamplingAreas.length > 0) {
+      const match = listSamplingAreas.find(
+        (sa) => String(sa.sampling_area_id) === String(initialSamplingAreaId)
+      );
+      if (match) setInputSelectSamplingArea([match.sampling_area_id]);
+    }
+  }, [listSamplingAreas]);
 
   const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
   const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputOrganismNameFilter(event.target.value);
+    setFiltersApplied(false);
   };
 
   const handleInputPropertyValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,24 +172,24 @@ export function OrganismsFilters({
     }
   };
 
-  const handleInputPropertyDateChange = (value: string | React.SetStateAction<dayjs.Dayjs | null>) => {
-
-    setInputDate(value);
-    console.log(value);
-    setErrorPropertyValue('');
-
-    if(value && inputSelectProperty > 0){
-      // Perform validation based on inputType
-      const dataValidation = LIST_DATA_TYPES_VALIDATIONS.filter(dataType => dataType.id === inputDataType)[0];
-    
-      const isValidData = new RegExp(dataValidation.regex).test(value.format(DATE_FORMAT_TEMPLATE).toString());
-      if (isValidData) {
-        setInputPropertyValueFilter(value.format(DATE_FORMAT_TEMPLATE).toString());
-      }else{
-        setErrorPropertyValue(dataValidation.message);
+  const handleInputPropertyDateChange = (value: Dayjs | null) => {
+  
+      setInputDate(value);
+      console.log(value);
+      setErrorPropertyValue('');
+  
+      if(value && inputSelectProperty > 0){
+        // Perform validation based on inputType
+        const dataValidation = LIST_DATA_TYPES_VALIDATIONS.filter(dataType => dataType.id === inputDataType)[0];
+      
+        const isValidData = new RegExp(dataValidation.regex).test(value.format(DATE_FORMAT_TEMPLATE).toString());
+        if (isValidData) {
+          setInputPropertyValueFilter(value.format(DATE_FORMAT_TEMPLATE).toString());
+        }else{
+          setErrorPropertyValue(dataValidation.message);
+        }
       }
-    }
-  };
+    };
 
   //Properties for the select menu filters
   const ITEM_HEIGHT = 48;
@@ -153,17 +211,23 @@ export function OrganismsFilters({
       // On autofill we get a stringified value.
       typeof value === 'string' ? value.split(',') : value,
     );
+    setFiltersApplied(false);
   };
 
-  const handleChangeLocation = (event: SelectChangeEvent<typeof inputSelectLocation>) => {
+  const handleChangeHabitat = (event: SelectChangeEvent<typeof inputSelectHabitat>) => {
     const {
       target: { value },
     } = event;
-    setInputSelectLocation(
+    setInputSelectHabitat(
       // On autofill we get a stringified value.
       typeof value === 'string' ? value.split(',') : value,
     );
+
+    setInputSelectSamplingArea(listSamplingAreas.filter(samplingArea => value.includes(samplingArea.habitat_id)).map(samplingArea => samplingArea.sampling_area_id));  
+
+    setFiltersApplied(false);
   };
+
 
   const handleChangeSamplingArea = (event: SelectChangeEvent<typeof inputSelectSamplingArea>) => {
     const {
@@ -173,6 +237,7 @@ export function OrganismsFilters({
       // On autofill we get a stringified value.
       typeof value === 'string' ? value.split(',') : value,
     );
+    setFiltersApplied(false);
   };
 
   const handleChangeProject = (event: SelectChangeEvent<typeof inputSelectProject>) => {
@@ -183,6 +248,7 @@ export function OrganismsFilters({
       // On autofill we get a stringified value.
       typeof value === 'string' ? value.split(',') : value,
     );
+    setFiltersApplied(false);
   };
 
   const handleChangeTrait = (event: SelectChangeEvent<typeof inputSelectTrait>) => {
@@ -213,7 +279,7 @@ export function OrganismsFilters({
     //Get the selected property
     const tmpProperty = tmpTraitsProperties.filter(property => property.property_id == value)[0];
 
-    setInputDataType(parseInt(tmpProperty.data_type_id));
+    setInputDataType(tmpProperty.data_type_id);
 
     //Get the data type of the property and the operations associated
     const listAssociatedOperations = LIST_RELATION_DATA_TYPE_OPERATION.filter(dataType => dataType.id == tmpProperty.data_type_id)[0].operations;
@@ -269,6 +335,11 @@ export function OrganismsFilters({
           operation: inputSelectOperation,
           operation_symbol: listOperationsProperty.filter(operation => operation.value == inputSelectOperation)[0].name}
       ]);
+
+      //Add the new property to the list of output properties by default
+      setSelectedOutputProperties([...selectedOutputProperties, inputSelectProperty]);
+      setFiltersApplied(false);
+
       //Reset the property filter
       setInputSelectProperty(0);
       setInputDataType(0);
@@ -292,12 +363,14 @@ export function OrganismsFilters({
     if(selectedPropertyValues.length <= 2){
       setInputSelectCondition('');
     }
+    setFiltersApplied(false);
   };
 
   //Process the selected properties to show in the output table
   const handleIncludePropertiesChange = (_, value) => {
     console.log(value.map((v) => v.property_id));
     setSelectedOutputProperties(value.map((v) => v.property_id));
+    setFiltersApplied(false);
   };
 
   const optionsOutputProperties = listPropertiesNoGroupped.map((option) => {
@@ -310,7 +383,9 @@ export function OrganismsFilters({
 
   return (
     <Card sx={{ p: 2 }}>
-
+      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 400, color: 'primary.main' }}>
+            Construct your organism filters
+        </Typography>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
       <FormControl sx={{ m: 1, width: 300 }}>
           <OutlinedInput
@@ -346,6 +421,26 @@ export function OrganismsFilters({
             </Select>
         </FormControl>
         <FormControl sx={{ m: 1, width: 300 }}>
+          <InputLabel id="habitat-multiple-checkbox-label">Habitat</InputLabel>
+          <Select
+            labelId="habitat-multiple-checkbox-label"
+            id="habitat-multiple-checkbox"
+            multiple
+            value={inputSelectHabitat}
+            onChange={handleChangeHabitat}
+            input={<OutlinedInput label="Habitat" />}
+            renderValue={(selected) => listHabitats.filter(habitat => selected.includes(habitat.id)).map(habitat => habitat.name).join(', ')}
+            MenuProps={MenuProps}
+            >
+              {listHabitats.map((habitat) => (
+                <MenuItem key={habitat.id} value={habitat.id}>
+                  <Checkbox checked={inputSelectHabitat.includes(habitat.id)} />
+                  <ListItemText primary={habitat.name} />
+                </MenuItem>
+              ))}
+            </Select>
+        </FormControl>
+        <FormControl sx={{ m: 1, width: 300 }}>
           <InputLabel id="sampling-area-multiple-checkbox-label">Sampling area</InputLabel>
           <Select
             labelId="sampling-area-multiple-checkbox-label"
@@ -361,7 +456,12 @@ export function OrganismsFilters({
             {listLocations.map((location) => [
                 <ListSubheader key={location}>{location}</ListSubheader>,
                     ...listSamplingAreas.filter(samplingArea => samplingArea.location_name == location).map((samplingArea) => (
-                      <MenuItem key={samplingArea.sampling_area_id} value={samplingArea.sampling_area_id} sx={{ pl: 4 }}>
+                      <MenuItem 
+                        key={samplingArea.sampling_area_id} 
+                        value={samplingArea.sampling_area_id} 
+                        sx={{ pl: 4 }}
+                        disabled={inputSelectHabitat.length > 0 && !inputSelectHabitat.includes(samplingArea.habitat_id)}
+                      >
                         <Checkbox checked={inputSelectSamplingArea.includes(samplingArea.sampling_area_id)} />
                         <ListItemText primary={samplingArea.sampling_area_name} />
                       </MenuItem>
@@ -369,6 +469,16 @@ export function OrganismsFilters({
                 ])}
             </Select>
         </FormControl>
+        {inputSelectHabitat.length > 0 && listSamplingAreas.filter(samplingArea => inputSelectHabitat.includes(samplingArea.habitat_id)).length === 0 && (
+          <Alert severity="warning" sx={{ m: 1, width: 'auto' }}>
+            No sampling areas were found associated with the chosen habitat(s) so the habitat/sampling area filter is not applicable
+          </Alert>
+        )}
+        {inputSelectHabitat.length > 0 && inputSelectSamplingArea.length === 0 && (
+          <Alert severity="warning" sx={{ m: 1, width: 'auto' }}>
+            If sampling areas are not selected, the habitat/sampling area filter is not applicable
+          </Alert>
+        )}
         <FormControl sx={{ m: 1, width: 300 }}>
           <InputLabel id="project-multiple-checkbox-label">Project</InputLabel>
           <Select
@@ -393,13 +503,14 @@ export function OrganismsFilters({
       {/** Filters based on traits and properties */}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
         <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel>Trait</InputLabel>
+          <InputLabel id="trait-select-label">Trait</InputLabel>
             <Select labelId="trait-select-label"
                     id="trait-select" 
                     value={inputSelectTrait}
                     label="Trait"
                     input={<OutlinedInput label="Traits" />}
-                    onChange={handleChangeTrait}>
+                    onChange={handleChangeTrait}
+                    sx={{ color: inputSelectTrait === 0 ? 'text.secondary' : 'text.primary' }}>
 
             <MenuItem value={0}>Trait</MenuItem>
             {listTraitTypes.map((type) => [
@@ -415,13 +526,14 @@ export function OrganismsFilters({
         </FormControl>
 
         <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel>Property</InputLabel>
+          <InputLabel id="trait_properties-label">Property</InputLabel>
             <Select labelId="trait_properties-label"
                     id="trait_properties" 
                     value={inputSelectProperty}
                     label="Property"
                     input={<OutlinedInput label="Properties" />}
-                    onChange={handleChangeProperty}>
+                    onChange={handleChangeProperty}
+                    sx={{ color: inputSelectProperty === 0 ? 'text.secondary' : 'text.primary' }}>
 
               <MenuItem value={0}>Property</MenuItem>
               {/** Only show the properties of the selected trait that are not already selected 
@@ -492,10 +604,40 @@ export function OrganismsFilters({
             </FormControl>
          )}
         <Button
-          color="inherit"
-          variant='outlined'
+          color={inputSelectProperty > 0 && 
+                 inputPropertyValueFilter && 
+                 inputPropertyValueFilter.length > 0 && 
+                 inputSelectOperation && 
+                 inputSelectOperation.length > 0 && 
+                 !errorPropertyValue ? "primary" : "inherit"}
+          variant={inputSelectProperty > 0 && 
+                   inputPropertyValueFilter && 
+                   inputPropertyValueFilter.length > 0 && 
+                   inputSelectOperation && 
+                   inputSelectOperation.length > 0 && 
+                   !errorPropertyValue ? "contained" : "outlined"}
           startIcon={<AddIcon fontSize="var(--icon-fontSize-md)" />}
           onClick={handleClickAddProperty}
+          sx={{
+            ...(inputSelectProperty > 0 && 
+                inputPropertyValueFilter && 
+                inputPropertyValueFilter.length > 0 && 
+                inputSelectOperation && 
+                inputSelectOperation.length > 0 && 
+                !errorPropertyValue && {
+              animation: 'pulse 2s ease-in-out infinite',
+              '@keyframes pulse': {
+                '0%, 100%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.7)',
+                },
+                '50%': {
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)',
+                },
+              },
+            }),
+          }}
         >
           Add
         </Button>
@@ -537,6 +679,9 @@ export function OrganismsFilters({
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap', mt: 2 }}>
       {/** Show the list of columns to include in the output */}
         <FormControl fullWidth >
+          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 400, color: 'primary.main' }}>
+            Select the properties you want to include in your output table
+          </Typography>
           <Autocomplete 
             multiple
             onChange={handleIncludePropertiesChange}
@@ -560,22 +705,44 @@ export function OrganismsFilters({
               );
             }}
             renderInput={(params) => (
-              <TextField {...params} label="Select the properties you want to include in your output table." placeholder="Select one or more" />
+              <TextField {...params} placeholder="Select one or more" />
             )}
           />
         </FormControl>
         <Button
-          color="inherit"
+          color={!filtersApplied ? "primary" : "inherit"}
           variant='contained'
-          onClick={() => {handleFilterClick(inputOrganismNameFilter, 
-                                            inputSelectSpecies, 
-                                            inputSelectSamplingArea,
-                                            inputSelectProject,
-                                            selectedPropertyValues,
-                                            inputSelectCondition,
-                                            selectedOutputProperties
-                                          )}}
+          onClick={() => {
+            setFiltersApplied(true);
+            handleFilterClick(inputOrganismNameFilter, 
+                             inputSelectSpecies, 
+                             inputSelectSamplingArea,
+                             inputSelectProject,
+                             selectedPropertyValues,
+                             inputSelectCondition,
+                             selectedOutputProperties
+                           );
+            // Scroll down to make the output table visible
+            setTimeout(() => {
+              window.scrollBy({ top: 600, behavior: 'smooth' });
+            }, 100);
+          }}
           startIcon={<FilterIcon fontSize="var(--icon-fontSize-md)" />}
+          sx={{
+            ...( !filtersApplied && {
+              animation: 'pulse 2s ease-in-out infinite',
+              '@keyframes pulse': {
+                '0%, 100%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.7)',
+                },
+                '50%': {
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)',
+                },
+              },
+            }),
+          }}
         >
           Filter
         </Button>

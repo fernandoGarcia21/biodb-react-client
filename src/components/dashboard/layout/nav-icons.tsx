@@ -15,6 +15,7 @@ import { MapPinArea } from '@phosphor-icons/react/dist/ssr/MapPinArea';
 import { CalendarCheck as ProjectIcon } from '@phosphor-icons/react/dist/ssr/CalendarCheck';
 import { Link as LinkIcon } from '@phosphor-icons/react/dist/ssr/Link';
 import { FileCode as TypeDatasetIcon } from '@phosphor-icons/react/dist/ssr/FileCode';
+import { Info as InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -33,4 +34,5 @@ export const navIcons = {
   'map-pin-area': MapPinArea, 
   trait: TraitIcon,
   'fediverse-logo': FediverseLogo,
+  'info': InfoIcon,
 } as Record<string, Icon>;

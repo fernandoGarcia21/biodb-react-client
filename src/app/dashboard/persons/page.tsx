@@ -18,7 +18,7 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import Select from '@mui/material/Select';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Visibility from '@mui/icons-material/Visibility';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -40,18 +40,21 @@ import { getUserLevelsRequest } from '@/api/userLevels';
 import { createUserRequest } from '@/api/users';
 import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
 import { useUser } from '@/hooks/use-user';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [persons, setPersons] = useState([]);
   const isMounted = useRef(false);
-  const [listUserLevels, setListUserLevels] = useState([]);
+  const [listUserLevels, setListUserLevels] = useState<{ id: number; name: string }[]>([]);
   const [showPassword, setShowPassword] = React.useState(false);
   const [ errorsUser, setErrorsUser ] = React.useState({  user_level_id: false, password: false });
   const [ errorMessageUser, setErrorMessageUser ] = React.useState({  user_level_id: '', password: '' });
   const [userLevel, setUserLevel] = React.useState(0);
   const [userPassword, setUserPassword] = React.useState('');
   const { user } = useUser();
+  const brandTitle = useBrandTitle();
 
   const fetchPersons = async () => {
     try {
@@ -79,18 +82,18 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Persons | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Persons | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   //State for the operation result messages
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [errorMessage, setErrorMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   //Code for the delete dialog of deleting person
   const [open, setOpen] = React.useState(false);
   const [deleteName, setDeleteName] = React.useState("");
-  const [deleteId, setDeleteId] = React.useState(null);
+  const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
   //Handle the opening and closing of the dialog to delete
@@ -123,7 +126,7 @@ export default function Page(): React.JSX.Element {
         throw new Error('Person ID is null or undefined when trying to delete');
       }
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
         const errorMessage = JSON.parse(error.request.response).message;
         setErrorMessage(String(errorMessage));
       } else {
@@ -142,7 +145,7 @@ export default function Page(): React.JSX.Element {
   //Code for the add user dialog
   const [openAddUser, setOpenAddUser] = React.useState(false);
   const [addUserName, setAddUserName] = React.useState("");
-  const [addUserIdPerson, setAddUserIdPerson] = React.useState(null);
+  const [addUserIdPerson, setAddUserIdPerson] = React.useState<number | null>(null);
 
   //Handle the opening and closing of the dialog to delete
   const handleClickOpenAddUser = (idPerson: number, namePerson: string) => {
@@ -204,7 +207,7 @@ export default function Page(): React.JSX.Element {
         }
       }
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
         const errorMessage = JSON.parse(error.request.response).message;
         setErrorMessage(String(errorMessage));
       } else {
@@ -239,7 +242,7 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };
@@ -261,8 +264,8 @@ export default function Page(): React.JSX.Element {
 
 
   //Reset the error messages of the add user dialog
-    const onChangeUserLevel = (event: React.ChangeEvent<{ value: unknown }>) => {
-      const newUserLevel = event.target.value as number;
+    const onChangeUserLevel = (event: SelectChangeEvent<number>) => {
+      const newUserLevel = Number(event.target.value);
       setUserLevel(newUserLevel);
       setErrorMessageUser({ ...errorMessageUser, user_level_id: '' });
       setErrorsUser({ ...errorsUser, user_level_id: false });

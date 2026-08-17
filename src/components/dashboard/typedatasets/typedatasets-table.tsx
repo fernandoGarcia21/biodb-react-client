@@ -36,7 +36,7 @@ interface TypeDatasetTableProps {
   rows?: TypeDataset[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
   handleClickOpen: (id: number, name: string) => void;
   handleUpdateClick: (id: number) => void;
 }
@@ -147,7 +147,7 @@ export function TypeDatasetsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

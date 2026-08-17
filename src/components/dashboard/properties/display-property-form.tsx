@@ -7,13 +7,14 @@ import { useParams } from 'next/navigation'
 import {useEffect, useState, useRef} from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CardHeader from '@mui/material/CardHeader';
 import Divider from '@mui/material/Divider';
+import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
 import { useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
 import Typography from '@mui/material/Typography';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import {BACKEND_ENDPOINT_URL_IMAGES, DATA_TYPE_TEXT} from '@/constants';
 
@@ -29,7 +30,8 @@ const schema = zod.object({
   is_column_required: zod.boolean(),
   template_column_name: zod.string(),
   pre_defined_values: zod.string(),
-  protocol: zod.string()
+  protocol: zod.string(),
+  req_project_must_read: zod.boolean(),
 });
 
 type Values = zod.infer<typeof schema>;
@@ -60,11 +62,13 @@ export function DisplayPropertyForm(): React.JSX.Element {
       template_column_name: '',
       is_column_required: false,
       protocol: '',
+      req_project_must_read: false,
     },
    });
 
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const [propertyId, setPropertyId] = useState(params.id);
+  const brandTitle = useBrandTitle();
   const isMounted = useRef(false);
   
   useEffect(() => {
@@ -84,9 +88,10 @@ export function DisplayPropertyForm(): React.JSX.Element {
                       trait_name: responseProperty.data[0].trait_name,
                       template_column_name: responseProperty.data[0].template_column_name == null ? '' : responseProperty.data[0].template_column_name,
                       pre_defined_values: responseProperty.data[0].pre_defined_values == null ? '' : responseProperty.data[0].pre_defined_values,
-                      protocol: responseProperty.data[0].protocol == null ? '' : preprocessHtml(responseProperty.data[0].protocol),});
+                      protocol: responseProperty.data[0].protocol == null ? '' : preprocessHtml(responseProperty.data[0].protocol),
+                      req_project_must_read: responseProperty.data[0].req_project_must_read,});
 
-              document.title = `Display Property: ${responseProperty.data[0].name} | Dashboard | ${config.site.name}`;
+              document.title = `Display Property: ${responseProperty.data[0].name} | ${brandTitle}`;
 
             }
 
@@ -157,6 +162,9 @@ export function DisplayPropertyForm(): React.JSX.Element {
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Protocol</Typography>
             <div dangerouslySetInnerHTML={{ __html: watch('protocol') }} />
           </Stack>
+          <Typography variant="subtitle1" sx={{ mt: 1 }}>Require must read in projects</Typography>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('req_project_must_read') ? 'Yes' : 'No'}</Typography>
+            <FormHelperText>If 'Yes', when the user downloads organism data for this property, the system displays the 'Must read' information of the projects associated with the organisms before proceeding with the data download.</FormHelperText>
         </CardContent>
         <Divider />
       </Card>

@@ -37,8 +37,8 @@ interface ExternalDatasetTableProps {
   rows?: ExternalDataset[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
-  handleClickOpen: (id: number, name: string) => void;
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
+  handleClickOpen?: (id: number, name: string) => void;
 }
 
 export function ExternalDatasetsTable({
@@ -110,7 +110,7 @@ export function ExternalDatasetsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

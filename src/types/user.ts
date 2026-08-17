@@ -9,7 +9,7 @@ export interface User {
 
 
 export interface Person {
-  firstName?: string;
-  familyName?: string;
+  first_name?: string;
+  family_name?: string;
   email?: string;
 }

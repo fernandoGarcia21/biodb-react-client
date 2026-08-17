@@ -4,8 +4,20 @@ import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
+import CardActions from '@mui/material/CardActions';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { useTheme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 import type { SxProps } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { Icon } from '@phosphor-icons/react/dist/lib/types';
@@ -16,6 +28,9 @@ import type { ApexOptions } from 'apexcharts';
 
 import { Chart } from '@/components/core/chart';
 
+import { paths } from '@/paths';
+import { useRouter } from 'next/navigation';
+
 const iconMapping = { Desktop: DesktopIcon, Tablet: DeviceTabletIcon, Phone: PhoneIcon } as Record<string, Icon>;
 
 export interface TraitsProps {
@@ -25,7 +40,10 @@ export interface TraitsProps {
 }
 
 export function Traits({ chartSeries, labels, sx }: TraitsProps): React.JSX.Element {
-  const chartOptions = useChartOptions(labels);
+  const theme = useTheme();
+  const chartColors = getChartColors(theme, labels.length);
+  const chartOptions = useChartOptions(labels, chartColors);
+  const router = useRouter();
 
   return (
     <Card sx={sx}>
@@ -33,42 +51,71 @@ export function Traits({ chartSeries, labels, sx }: TraitsProps): React.JSX.Elem
       <CardContent>
         <Stack spacing={2}>
           <Chart height={300} options={chartOptions} series={chartSeries} type="donut" width="100%" />
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'center' }}>
-            {chartSeries.map((item, index) => {
-              const label = labels[index];
-              const Icon = iconMapping[label];
+          <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell
+                    sx={{ backgroundColor: 'grey.400', fontSize: '1rem', fontWeight: 700, color: 'common.white' }}
+                  >
+                    Trait
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{ backgroundColor: 'grey.400', fontSize: '1rem', fontWeight: 700, color: 'common.white' }}
+                  >
+                    Records
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {chartSeries.map((item, index) => {
+                  const label = labels[index];
+                  const Icon = iconMapping[label];
+                  const rowColor = chartColors[index % chartColors.length] ?? theme.palette.grey[500];
 
-              return (
-                <Stack key={label} spacing={1} sx={{ alignItems: 'center' }}>
-                  {Icon ? <Icon fontSize="var(--icon-fontSize-lg)" /> : null}
-                  <Typography>{label}</Typography>
-                  <Typography color="text.secondary" variant="subtitle2">
-                    {item}
-                  </Typography>
-                </Stack>
-              );
-            })}
-          </Stack>
+                  return (
+                    <TableRow key={label} sx={{ backgroundColor: alpha(rowColor, 0.12) }}>
+                      <TableCell sx={{ borderLeft: `4px solid ${rowColor}` }}>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                          {Icon ? <Icon fontSize="var(--icon-fontSize-md)" /> : null}
+                          <Typography variant="body2">{label}</Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography color="text.secondary" variant="body2">
+                          {item}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Stack>
       </CardContent>
+      <Divider />
+      <CardActions sx={{ justifyContent: 'flex-end' }}>
+        <Button color="inherit" endIcon={<ArrowRightIcon fontSize="var(--icon-fontSize-md)" />} size="small"
+        onClick={() => {
+            router.push(paths.dashboard.organisms());
+          }}>
+          Explore data
+        </Button>
+      </CardActions>
     </Card>
   );
 }
 
-function useChartOptions(labels: string[]): ApexOptions {
-  const theme = useTheme();
-
-  // Define a broader set of default colors from your theme or custom colors
+function getChartColors(theme: Theme, labelsCount: number): string[] {
   const defaultColors = [
     theme.palette.primary.main,
     theme.palette.success.main,
     theme.palette.warning.main,
     theme.palette.error.main,
     theme.palette.info.main,
-    theme.palette.secondary.main,
-    theme.palette.text.primary,
-    theme.palette.grey[500], // Example: using a grey shade
-    '#66DA26', // Custom colors for more variety
+    '#6cbb42c6', // Custom colors for more variety
     '#E91E63',
     '#FF9800',
     '#00BCD4',
@@ -76,14 +123,22 @@ function useChartOptions(labels: string[]): ApexOptions {
     '#CDDC39',
     '#795548',
     '#607D8B',
+    '#98bc17',
+    '#9d21b0',
+    theme.palette.secondary.main,
+    theme.palette.text.primary,
+    theme.palette.grey[500], // Example: using a grey shade
   ];
 
-   // Take as many colors as there are labels, or default to the full list if fewer labels
-  const colorsForChart = defaultColors.slice(0, labels.length);
+  return defaultColors.slice(0, labelsCount);
+}
+
+function useChartOptions(labels: string[], chartColors: string[]): ApexOptions {
+  const theme = useTheme();
 
   return {
     chart: { background: 'transparent' },
-    colors: colorsForChart.length > 0 ? colorsForChart : defaultColors,
+    colors: chartColors.length > 0 ? chartColors : [theme.palette.primary.main],
     dataLabels: { enabled: true },
     labels,
     legend: { show: true, position: 'top', horizontalAlign: 'center', fontSize: '14px', markers: { width: 12, height: 12 } },
@@ -95,6 +150,6 @@ function useChartOptions(labels: string[]): ApexOptions {
     states: { active: { filter: { type: 'none' } }, hover: { filter: { type: 'none' } } },
     stroke: { width: 0 },
     theme: { mode: theme.palette.mode },
-    tooltip: { fillSeriesColor: false },
+    tooltip: { fillSeriesColor: true },
   };
 }

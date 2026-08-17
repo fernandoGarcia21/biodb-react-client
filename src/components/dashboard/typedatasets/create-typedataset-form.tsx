@@ -22,9 +22,9 @@ import Switch from '@mui/material/Switch';
 import MenuItem from '@mui/material/MenuItem';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
+import { AxiosError } from 'axios';
 
 import { createTypeDatasetRequest } from '@/api/typeDatasets';
-import { get } from 'axios';
 
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }),
@@ -35,7 +35,7 @@ type Values = zod.infer<typeof schema>;
 export function CreateTypeDatasetForm(): React.JSX.Element {
   const router = useRouter();
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   const {
       control,
@@ -64,7 +64,7 @@ export function CreateTypeDatasetForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {

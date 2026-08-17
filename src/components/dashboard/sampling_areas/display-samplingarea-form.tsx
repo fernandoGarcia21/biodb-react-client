@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
 import { Typography } from '@mui/material';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getSamplingAreaRequest } from '@/api/samplingAreas';
 
@@ -23,6 +24,8 @@ const schema = zod.object({
   longitude: zod.string().min(3).max(10).or(zod.string().max(0)),
   country_id: zod.string().min(2, { message: 'Country is required' }).max(2),
   country_name: zod.string(),
+  habitat_name: zod.string().optional(),
+  habitat_description: zod.string().optional(),
   location_id: zod.number().min(1, { message: 'Location is required' }),
   location_name: zod.string(),
 });
@@ -49,12 +52,15 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
       latitude: '',
       country_name: '',
       location_name: '',
+      habitat_name: '',
+      habitat_description: '',
     },
    });
 
 
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const [samplingAreaId, setSamplingAreaId] = useState(params.id);
+  const brandTitle = useBrandTitle();
 
   const isMounted = useRef(false);
   
@@ -73,9 +79,11 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
                       longitude: responseSamplingArea.data[0].longitude,
                       latitude: responseSamplingArea.data[0].latitude,
                       country_name: responseSamplingArea.data[0].country_name,
-                      location_name: responseSamplingArea.data[0].location_name, });
+                      location_name: responseSamplingArea.data[0].location_name,
+                      habitat_name: responseSamplingArea.data[0].habitat_name,
+                      habitat_description: responseSamplingArea.data[0].habitat_description,});
 
-              document.title = `Display Sampling Area: ${responseSamplingArea.data[0].name} | Dashboard | ${config.site.name}`;
+              document.title = `Display Sampling Area: ${responseSamplingArea.data[0].name} | ${brandTitle}`;
             }
 
           }
@@ -101,6 +109,10 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
 
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Description</Typography>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('description')}</Typography>
+
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Habitat</Typography>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_name')}</Typography>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_description')}</Typography>
 
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Country</Typography>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('country_name')}</Typography>

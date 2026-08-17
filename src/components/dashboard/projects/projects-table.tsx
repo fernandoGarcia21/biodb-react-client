@@ -21,6 +21,7 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { Trash as DeleteIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { Pencil as UpdateIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
+import { BookOpenText as ProtocolIcon } from '@phosphor-icons/react/dist/ssr/BookOpenText';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths } from '@/paths';
@@ -34,6 +35,10 @@ export interface Project {
   owner_person_id: string;
   owner_person_name: string;
   owner_person_email: string;
+  must_read_title?: string;
+  must_read_content?: string;
+  external_dataset_names?: string;
+  external_dataset_ids?: string;
 }
 
 interface ProjectTableProps {
@@ -42,9 +47,10 @@ interface ProjectTableProps {
   rows?: Project[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
   handleClickOpen: (id: number, name: string) => void;
   handleUpdateClick: (id: number) => void;
+  handleMustReadClickOpen: (pMustReadTitle: string, pMustReadContent: string ) => void;
 }
 
 export function ProjectsTable({
@@ -56,10 +62,22 @@ export function ProjectsTable({
   myPageChangeEvent,
   handleClickOpen,
   handleUpdateClick,
+  handleMustReadClickOpen,
 }: ProjectTableProps): React.JSX.Element {
+  const DESCRIPTION_PREVIEW_LENGTH = 140;
+  const topScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const tableScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const [topScrollbarWidth, setTopScrollbarWidth] = React.useState(0);
+
   const rowIds = React.useMemo(() => {
     return rows.map((project) => project.id);
   }, [rows]);
+
+  const [expandedDescriptions, setExpandedDescriptions] = React.useState<Record<string, boolean>>({});
+
+  const toggleDescription = React.useCallback((projectId: string) => {
+    setExpandedDescriptions((prev) => ({ ...prev, [projectId]: !prev[projectId] }));
+  }, []);
 
   const { selectAll, deselectAll, selectOne, deselectOne, selected } = useSelection(rowIds);
 
@@ -68,9 +86,78 @@ export function ProjectsTable({
   const { user } = useUser();
   const router = useRouter();
 
+  React.useEffect(() => {
+    const topScroll = topScrollRef.current;
+    const tableScroll = tableScrollRef.current;
+
+    if (!topScroll || !tableScroll) {
+      return;
+    }
+
+    const syncFromTop = () => {
+      tableScroll.scrollLeft = topScroll.scrollLeft;
+    };
+
+    const syncFromTable = () => {
+      topScroll.scrollLeft = tableScroll.scrollLeft;
+    };
+
+    const updateScrollbarWidth = () => {
+      const tableEl = tableScroll.querySelector('table');
+      setTopScrollbarWidth(tableEl ? tableEl.scrollWidth : tableScroll.scrollWidth);
+    };
+
+    topScroll.addEventListener('scroll', syncFromTop);
+    tableScroll.addEventListener('scroll', syncFromTable);
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollbarWidth();
+    });
+
+    const tableEl = tableScroll.querySelector('table');
+    resizeObserver.observe(tableScroll);
+    if (tableEl) {
+      resizeObserver.observe(tableEl);
+    }
+
+    window.addEventListener('resize', updateScrollbarWidth);
+    updateScrollbarWidth();
+
+    return () => {
+      topScroll.removeEventListener('scroll', syncFromTop);
+      tableScroll.removeEventListener('scroll', syncFromTable);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateScrollbarWidth);
+    };
+  }, [rows.length, rowsPerPage]);
+
   return (
     <Card>
-      <Box sx={{ overflowX: 'auto' }}>
+      <Box
+        ref={topScrollRef}
+        sx={{
+          overflowX: 'scroll',
+          overflowY: 'hidden',
+          height: 16,
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': {
+            height: 12,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'rgba(0, 0, 0, 0.08)',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(0, 0, 0, 0.35)',
+            borderRadius: 8,
+          },
+        }}
+      >
+        <Box sx={{ width: topScrollbarWidth || '100%', height: 1 }} />
+      </Box>
+      <Box ref={tableScrollRef} sx={{ overflowX: 'auto' }}>
         <Table sx={{ minWidth: '800px' }}>
           <TableHead>
             <TableRow>
@@ -89,9 +176,10 @@ export function ProjectsTable({
               </TableCell>
               <TableCell>Id</TableCell>
               <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
+              <TableCell sx={{ minWidth: 360, width: '35%' }}>Description</TableCell>
               <TableCell>Responsible person</TableCell>
               <TableCell>Email</TableCell>
+              <TableCell>Must read</TableCell>
               <TableCell>External datasets</TableCell>
               { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
                 <>
@@ -124,16 +212,55 @@ export function ProjectsTable({
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
                       <Link
                       variant="subtitle2"
-                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      sx={{ cursor: 'pointer', textDecoration: 'none', p: 0, m: 0, background: 'none', border: 'none' }}
                       onClick={() => router.push(paths.dashboard.projectDisplay(Number(row.id)))}
                     >
                       {row.name}
                     </Link>
                     </Stack>
                   </TableCell>
-                  <TableCell>{row.description}</TableCell>
+                  <TableCell sx={{ minWidth: 360, width: '35%' }}>
+                    {(() => {
+                      const description = row.description ?? '';
+                      const isExpanded = Boolean(expandedDescriptions[row.id]);
+                      const shouldTruncate = description.length > DESCRIPTION_PREVIEW_LENGTH;
+                      const descriptionPreview = shouldTruncate && !isExpanded
+                        ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH)}...`
+                        : description;
+
+                      return (
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {descriptionPreview}
+                          {shouldTruncate ? (
+                            <Link
+                              component="button"
+                              type="button"
+                              onClick={() => { toggleDescription(row.id); }}
+                              sx={{ ml: 1, fontWeight: 600 }}
+                            >
+                              {isExpanded ? 'Read less' : 'Read more'}
+                            </Link>
+                          ) : null}
+                        </Typography>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell>{row.owner_person_name}</TableCell>
                   <TableCell>{row.owner_person_email}</TableCell>
+                  <TableCell>
+                    {row.must_read_title ? (
+                      <IconButton
+                      aria-label="must read"
+                      onClick={() => {
+                        handleMustReadClickOpen(row.must_read_title || '', row.must_read_content || '');
+                      }}
+                    >
+                      <ProtocolIcon />
+                    </IconButton>
+                    ) : (
+                      'No must read'
+                    )}
+                  </TableCell>
                   <TableCell>
                             {row.external_dataset_names
                               ? row.external_dataset_names.split('|').map((name, index) => (
@@ -143,7 +270,7 @@ export function ProjectsTable({
                                 component={RouterLink}
                                 href={`
                                   ${row.external_dataset_ids ? 
-                                      paths.dashboard.externalDatasetUpdate(row.external_dataset_ids.split('|')[index]) : paths.dashboard. externalDatasets
+                                      paths.dashboard.externalDatasetDisplay(row.external_dataset_ids.split('|')[index]) : paths.dashboard. externalDatasets
                                       }
                                   `}
                                 clickable
@@ -153,7 +280,9 @@ export function ProjectsTable({
                               : 'No external datasets'}
                   </TableCell>
 
-                  { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && ( <>
+                  { (user?.levelId === USER_LEVEL_ADMIN 
+                    || (user?.levelId === USER_LEVEL_LEADER && row.owner_person_id === user?.personId)) && ( <>
+                      
                       <TableCell>
                       <IconButton aria-label="update"
                           onClick={() => { handleUpdateClick(Number(row.id)); }}>
@@ -181,7 +310,7 @@ export function ProjectsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

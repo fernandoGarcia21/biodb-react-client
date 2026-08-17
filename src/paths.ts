@@ -1,13 +1,25 @@
+import { AboutUs } from "./components/dashboard/overview/about-us";
+
 export const paths = {
   home: '/',
   auth: { signIn: '/auth/sign-in', signUp: '/auth/sign-up', resetPassword: '/auth/reset-password' },
   dashboard: {
     overview: '/dashboard',
+    aboutUs: '/dashboard/about',
     account: '/dashboard/account',
     customers: '/dashboard/customers',
     users: '/dashboard/users',
     species: '/dashboard/species',
-    organisms: '/dashboard/organisms',
+    speciesCreate: '/dashboard/species/create/',
+    speciesUpdate: (speciesId: number | string) => `/dashboard/species/update/${speciesId}`,
+    organisms: (params?: { speciesId?: number | string; locationId?: number | string; samplingAreaId?: number | string }) => {
+      const query = new URLSearchParams();
+      if (params?.speciesId !== undefined) query.set('speciesId', String(params.speciesId));
+      if (params?.locationId !== undefined) query.set('locationId', String(params.locationId));
+      if (params?.samplingAreaId !== undefined) query.set('samplingAreaId', String(params.samplingAreaId));
+      const qs = query.toString();
+      return qs ? `/dashboard/organisms?${qs}` : '/dashboard/organisms';
+    },
     traits: '/dashboard/traits',
     properties: '/dashboard/properties',
     traitProperties: (traitId: number | string) => `/dashboard/properties/${traitId}`,
@@ -18,6 +30,7 @@ export const paths = {
     integrations: '/dashboard/integrations',
     settings: '/dashboard/settings',
     batchProcesses: '/dashboard/batch',
+    batchReview: (batchId: number | string) => `/dashboard/batch/review/${batchId}`,
     organismsBatchCreate: '/dashboard/organisms/batch/create',
     organismsBatchDelete: '/dashboard/organisms/batch/delete',
     locations: '/dashboard/location',
@@ -50,5 +63,6 @@ export const paths = {
     samplingAreaDisplay: (samplingAreaId: number | string) => `/dashboard/samplingarea/display/${samplingAreaId}`,
     traitDisplay: (traitId: number | string) => `/dashboard/traits/display/${traitId}`,
   },
-  errors: { notFound: '/errors/not-found' },
-} as const;
+  errors: { notFound: '/errors/not-found', tooManyRequests: '/errors/too-many-requests' },
+  legal: { cookiePolicy: '/legal/cookie-policy', privacyPolicy: '/legal/privacy-policy' },
+};

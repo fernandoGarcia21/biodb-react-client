@@ -34,6 +34,7 @@ export interface Person {
   abbreviation: string;
   email: string;
   additional_info: string;
+  user_id?: string; // Added user_id property
 }
 
 interface PersonTableProps {
@@ -42,7 +43,7 @@ interface PersonTableProps {
   rows?: Person[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
   handleClickOpen: (id: number, name: string) => void;
   handleUpdateClick: (id: number) => void;
   handleClickOpenAddUser: (id: number, name: string) => void;
@@ -180,7 +181,7 @@ export function PersonsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

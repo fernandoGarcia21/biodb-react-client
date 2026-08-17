@@ -22,6 +22,8 @@ import MenuItem from '@mui/material/MenuItem';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getTypeDatasetRequest, updateTypeDatasetRequest } from '@/api/typeDatasets';
 
@@ -53,9 +55,10 @@ export function UpdateTypeDatasetForm(): React.JSX.Element {
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const params = useParams<{ id: int }>();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const params = useParams<{ id: string }>();
   const [typeDatasetId, setTypeDatasetId] = useState(params.id);
+  const brandTitle = useBrandTitle();
 
   const isMounted = useRef(false);
   
@@ -68,7 +71,7 @@ export function UpdateTypeDatasetForm(): React.JSX.Element {
             const responseTypeDataset= await getTypeDatasetRequest(typeDatasetId);
             if (responseTypeDataset.data && responseTypeDataset.data.length > 0) {
               reset({ name: responseTypeDataset.data[0].name, });
-              document.title = `Update Type Dataset: ${responseTypeDataset.data[0].name} | Dashboard | ${config.site.name}`;
+              document.title = `Update Type Dataset: ${responseTypeDataset.data[0].name} | ${brandTitle}`;
             }
           }
         } catch (error) {
@@ -91,7 +94,7 @@ export function UpdateTypeDatasetForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {

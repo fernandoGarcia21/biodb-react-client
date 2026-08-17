@@ -18,18 +18,19 @@ import { UpdateLocationForm } from '@/components/dashboard/locations/update-loca
 import { TraitsTable } from '@/components/dashboard/traits/traits-location-table-collapsible';
 import type { Trait } from '@/components/dashboard/traits/traits-location-table-collapsible';
 import { paths } from '@/paths';
-
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const pLocationtId = params.id; //Obtain the trait id from the URL
   const isMounted = useRef(false);
+  const brandTitle = useBrandTitle();
 
     //Add title to the page
       useEffect(() => {
-        document.title = `Update | Location | Dashboard | ${config.site.name}`;
-      }, []);
+        document.title = `Update | Location | ${brandTitle}`;
+      }, [brandTitle]);
     
 
     return (

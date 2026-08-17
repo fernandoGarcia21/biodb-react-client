@@ -23,15 +23,22 @@ import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
 import Typography from '@mui/material/Typography';
+import { AxiosError } from 'axios';
 
 import { getExternalDatasetRequest, updateExternalDatasetRequest } from '@/api/externalDatasets';
 import { getTypeDatasetsRequest } from '@/api/typeDatasets';
+import { getPersonsRequest, getPersonRequest } from '@/api/persons';
+import { useUser } from '@/hooks/use-user';
+
+import { USER_LEVEL_ADMIN } from '@/constants';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }),
   description: zod.string().min(1, { message: 'Description is required' }),
   url: zod.string().url({ message: 'Invalid URL format' }), // Validate URL format
   type_dataset_id: zod.number().min(1, { message: 'The type of dataset is required.' }),
+  owner_person_id: zod.number().min(1, { message: 'The person who is responsible for the dataset is required.' }),
 });
 
 type Values = zod.infer<typeof schema>;
@@ -39,6 +46,7 @@ type Values = zod.infer<typeof schema>;
 
 export function UpdateExternalDatasetForm(): React.JSX.Element {
   const router = useRouter();
+  const { user } = useUser();
 
   const {
     control,
@@ -56,16 +64,19 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
         description: '',
         url: '',
         type_dataset_id: 0,
+        owner_person_id: 0,
+
     },
    });
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [listTypeDatasets, setListTypeDatasets] = useState([]);
-  const params = useParams<{ id: int }>();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [listTypeDatasets, setListTypeDatasets] = useState<{ id: number; name: string }[]>([]);
+  const [listPersons, setListPersons] = useState<{ id: number; first_name: string; family_name: string; email: string }[]>([]);
+  const params = useParams<{ id: string }>();
   const [externalDatasetId, setExternalDatasetId] = useState(params.id);
-
+  const brandTitle = useBrandTitle();
   const isMounted = useRef(false);
   
   useEffect(() => {
@@ -79,8 +90,10 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
               reset({ name: responseExternalDataset.data[0].name, 
                       description: responseExternalDataset.data[0].description,
                       url: responseExternalDataset.data[0].url,
-                      type_dataset_id: responseExternalDataset.data[0].type_dataset_id,  });
-              document.title = `Update External Dataset: ${responseExternalDataset.data[0].name} | Dashboard | ${config.site.name}`;
+                      type_dataset_id: responseExternalDataset.data[0].type_dataset_id,
+                      owner_person_id: responseExternalDataset.data[0].owner_person_id });
+                      
+              document.title = `Update External Dataset: ${responseExternalDataset.data[0].name} | ${brandTitle}`;
             }
 
             //Fetch dataset types info
@@ -88,6 +101,23 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
             if (responseTypeDatasets.data && responseTypeDatasets.data.length > 0) {
               setListTypeDatasets(responseTypeDatasets.data);
             }
+
+            if(user?.levelId === USER_LEVEL_ADMIN) { //admin user  
+              //Fetch persons info
+                const responsePersons = await getPersonsRequest();
+                if (responsePersons.data && responsePersons.data.length > 0) {
+                  setListPersons(responsePersons.data);
+              }
+            }else{
+                  //Fetch the person info for the group leader
+                  console.log('Fetching person info for group leader with personId:', user?.personId);
+                  const responsePerson = await getPersonRequest(user.personId);
+                  if (responsePerson.data) {
+                    setListPersons(responsePerson.data);
+                  } else {
+                    console.error('No person data found for the group leader');
+                  }
+              }
           }
         } catch (error) {
           console.error('Error fetching external dataset info:', error);
@@ -109,7 +139,7 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -134,12 +164,32 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
         <CardContent>
           <Stack spacing={3} sx={{ maxWidth: 'sm' }}>
           <Controller
+              control={control}
+              name="owner_person_id"
+              render={({ field }) => (
+              <FormControl fullWidth error={Boolean(errors.owner_person_id)}>
+                <InputLabel>Owner</InputLabel>
+                  <Select {...field} value={field.value ?? 0}
+                  onChange={e => field.onChange(Number(e.target.value))} label="Owner" variant="outlined">
+                  <MenuItem value={0}>Select one person</MenuItem>
+                    {listPersons.map((option) => (
+                      <MenuItem key={option.id} value={option.id}>
+                        {`${option.first_name} ${option.family_name}: ${option.email}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                {errors.owner_person_id ? <FormHelperText>{errors.owner_person_id.message}</FormHelperText> : null}
+              </FormControl>
+              )}
+          />
+          <Controller
                 control={control}
                 name="type_dataset_id"
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.type_dataset_id)}>
                   <InputLabel>Type dataset</InputLabel>
-                    <Select {...field} defaultValue="0" label="Type dataset" variant="outlined">
+                    <Select {...field} value={field.value ?? 0}
+                    onChange={e => field.onChange(Number(e.target.value))} label="Type dataset" variant="outlined">
                     <MenuItem value={0}>Select one type of dataset</MenuItem>
                       {listTypeDatasets.map((option) => (
                         <MenuItem key={option.id} value={option.id}>
@@ -179,7 +229,7 @@ export function UpdateExternalDatasetForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
-                  <OutlinedInput {...field} label="Description" type="text" multiline="true" minRows={4} />
+                  <OutlinedInput {...field} label="Description" type="text" multiline={true} minRows={4} />
                   {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
                 </FormControl>
                 )}

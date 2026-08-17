@@ -29,14 +29,19 @@ const schema = zod.object({
   password: zod.string().min(1, { message: 'Password is required' }),
 });
 
-type Values = zod.infer<typeof schema>;
+// Ensure Values matches SignInWithPasswordParams (both fields required)
+type Values = {
+  email: string;
+  password: string;
+};
 
-const defaultValues = { email: 'diegos@gmail.com', password: '000000' } satisfies Values;
+const defaultValues = { email: '', password: '' } satisfies Values;
 
 export function SignInForm(): React.JSX.Element {
   const router = useRouter();
 
-  const { setPerson } = useContext(UserContext);
+  const userContext = useContext(UserContext);
+  const setPerson = userContext?.setPerson;
 
   const { checkSession } = useUser();
 
@@ -55,7 +60,8 @@ export function SignInForm(): React.JSX.Element {
     async (values: Values): Promise<void> => {
       setIsPending(true);
 
-      const { error, personData } = await authClient.signInWithPassword(values);
+      const result = await authClient.signInWithPassword(values);
+      const { error, personData } = result;
       setIsPending(false);
 
       if (error) {
@@ -65,7 +71,7 @@ export function SignInForm(): React.JSX.Element {
       }
 
       // Update the user object with the returned data
-      if(personData){
+      if (personData && typeof setPerson === 'function') {
         setPerson(personData);
       }
 
@@ -85,8 +91,8 @@ export function SignInForm(): React.JSX.Element {
         <Typography variant="h4">Sign in</Typography>
         <Typography color="text.secondary" variant="body2">
           Don&apos;t have an account?{' '}
-          <Link component={RouterLink} href={paths.auth.signUp} underline="hover" variant="subtitle2">
-            Sign up
+          <Link component={RouterLink} href={paths.dashboard.aboutUs} underline="hover" variant="subtitle2">
+            Contact us
           </Link>
         </Typography>
       </Stack>
@@ -138,7 +144,7 @@ export function SignInForm(): React.JSX.Element {
             )}
           />
           <div>
-            <Link component={RouterLink} href={paths.auth.resetPassword} variant="subtitle2">
+            <Link component={RouterLink} href={paths.dashboard.aboutUs} variant="subtitle2">
               Forgot password?
             </Link>
           </div>
@@ -148,16 +154,6 @@ export function SignInForm(): React.JSX.Element {
           </Button>
         </Stack>
       </form>
-      <Alert color="warning">
-        Use{' '}
-        <Typography component="span" sx={{ fontWeight: 700 }} variant="inherit">
-          sofia@devias.io
-        </Typography>{' '}
-        with password{' '}
-        <Typography component="span" sx={{ fontWeight: 700 }} variant="inherit">
-          Secret1
-        </Typography>
-      </Alert>
     </Stack>
   );
 }

@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 import { Download as DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+import { AxiosError } from 'axios';
 
 import { config } from '@/config';
 import { PropertiesFilters } from '@/components/dashboard/properties/properties-filters';
@@ -21,15 +22,18 @@ import { PropertiesTable } from '@/components/dashboard/properties/properties-ta
 import type { Property } from '@/components/dashboard/properties/properties-table';
 import { paths } from '@/paths'; 
 
-import { getPropertyRequest, getPropertiesRequest, deletePropertyRequest } from '@/api/properties';
+import { getPropertyRequest, getPropertiesRequest, deletePropertyRequest, getPropertiesWithProtocolPdfRequest } from '@/api/properties';
 import {BACKEND_ENDPOINT_URL_IMAGES, USER_LEVEL_ADMIN, USER_LEVEL_LEADER} from '@/constants';
 import { useUser } from '@/hooks/use-user';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [properties, setProperties] = useState([]);
+  const [propertyIds, setPropertyIds] = useState<number[]>([]);
   const isMounted = useRef(false);
   const { user } = useUser();
+  const brandTitle = useBrandTitle();
 
   const fetchProperties = async () => {
     try {
@@ -52,17 +56,18 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `All properties | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `All properties | ${brandTitle}`;
+  }, [brandTitle]);
 
   //State for the operation result messages
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [errorMessage, setErrorMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [isDownloadingProtocols, setIsDownloadingProtocols] = React.useState(false);
 
   //Code for the delete dialog
   const [open, setOpen] = React.useState(false);
   const [deleteName, setDeleteName] = React.useState("");
-  const [deleteId, setDeleteId] = React.useState(null);
+  const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
   const handleDeleteClickOpen = (idProperty: number, nameProperty: string) => {
@@ -94,7 +99,7 @@ export default function Page(): React.JSX.Element {
         throw new Error('Property ID is null or undefined when trying to delete');
       }
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
         const errorMessage = JSON.parse(error.request.response).message;
         setErrorMessage(String(errorMessage));
       } else {
@@ -169,6 +174,33 @@ const preprocessHtml = (html: string): string => {
   return doc.body.innerHTML;
 };
 
+// Function to handle the download of all protocols as a single PDF
+  const handleDownloadAllProtocols = async () => {
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    setIsDownloadingProtocols(true);
+
+    try {
+      const response = await getPropertiesWithProtocolPdfRequest(propertyIds);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'all-property-protocols.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setSuccessMessage('PDF generated successfully.');
+    } catch (error) {
+      setErrorMessage('Error generating protocols PDF.');
+      console.error('Error generating protocols PDF:', error);
+    } finally {
+      setIsDownloadingProtocols(false);
+    }
+  };
+
 
   //Initialize the pagination of the table
   const [page, setPage] = useState(0);
@@ -184,7 +216,7 @@ const preprocessHtml = (html: string): string => {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };
@@ -194,15 +226,20 @@ const preprocessHtml = (html: string): string => {
         <Stack direction="row" spacing={3}>
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">All trait properties</Typography>
-          </Stack>
-          {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
-            <div>
-              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
-                Add
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Button
+                variant="outlined"
+                onClick={handleDownloadAllProtocols}
+                disabled={isDownloadingProtocols}
+                startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}
+              >
+                {isDownloadingProtocols ? 'Generating PDF...' : (propertyIds.length > 0 ? `Download ${propertyIds.length} protocols out of ${properties.length}` : 'Download all protocols')}
               </Button>
-            </div>
-          )}
+            </Stack>
+          </Stack>
         </Stack>
+        {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
+        {errorMessage ? <Alert severity="error" ref={errorRef}>{errorMessage}</Alert> : null}
         {/**<PropertiesFilters /> */}
         <PropertiesTable
           count={properties.length}
@@ -210,6 +247,8 @@ const preprocessHtml = (html: string): string => {
           rows={paginatedProperties}
           rowsPerPage={rowsPerPage}
           showTraitName={true}
+          propertyIds={propertyIds}
+          setPropertyIds={setPropertyIds}
           myRowsPerPageChangeEvent={handleChangeRowsPerPage}
           myPageChangeEvent={handleChangePage}
           handleDeleteClickOpen={handleDeleteClickOpen}

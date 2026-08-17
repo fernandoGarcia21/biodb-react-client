@@ -22,6 +22,7 @@ import Stack from '@mui/material/Stack';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
+import { AxiosError } from 'axios';
 
 import { createLocationRequest } from '@/api/locations';
 import { getCountriesRequest } from '@/api/countries';
@@ -29,7 +30,7 @@ import { getCountriesRequest } from '@/api/countries';
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }).max(255, { message: 'Name is too long' }),
   country_id: zod.string().min(2, { message: 'Country is required' }).max(2),
-  extra_info: zod.string().max(500).or(zod.string().max(0)),
+  extra_info: zod.string().max(1000).or(zod.string().max(0)),
 });
 
 
@@ -56,8 +57,8 @@ export function CreateLocationForm(): React.JSX.Element {
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [listCountries, setListCountries] = useState([]);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [listCountries, setListCountries] = useState<{ id: number; name: string }[]>([]);
 
   const isMounted = useRef(false);
   
@@ -93,7 +94,7 @@ export function CreateLocationForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -134,7 +135,8 @@ export function CreateLocationForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.country_id)}>
                   <InputLabel>Country</InputLabel>
-                    <Select {...field} defaultValue="0" label="Country" variant="outlined">
+                    <Select {...field} value={field.value ?? '0'}
+                     label="Country" variant="outlined">
                     <MenuItem value={0}>Select Country</MenuItem>
                       {listCountries.map((option) => (
                         <MenuItem key={option.id} value={option.id}>
@@ -152,7 +154,7 @@ export function CreateLocationForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.extra_info)}>
                   <InputLabel>Additional information</InputLabel>
-                  <OutlinedInput {...field} label="Additional information" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Additional information" type="text" multiline={true} minRows={4}/>
                   {errors.extra_info ? <FormHelperText>{errors.extra_info.message}</FormHelperText> : null}
                 </FormControl>
                 )}

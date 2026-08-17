@@ -4,7 +4,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { config } from '@/config';
-import { UpdateLocationPropertyForm } from '@/components/dashboard/locations/update-location-property-form';
+{/** import { UpdateLocationPropertyForm } from '@/components/dashboard/locations/update-location-property-form'; */}
 
 export const metadata = { title: `Add Property | Update | Location | Dashboard | ${config.site.name}` } satisfies Metadata;
 
@@ -14,7 +14,7 @@ export default function Page(): React.JSX.Element {
       <div>
         <Typography variant="h4">Location update property</Typography>
       </div>
-      <UpdateLocationPropertyForm />
+      {/** <UpdateLocationPropertyForm /> */}
     </Stack>
   );
 }

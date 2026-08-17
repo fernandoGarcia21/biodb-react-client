@@ -15,15 +15,18 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
 import { useSelection } from '@/hooks/use-selection';
+import { DATA_TYPE_TEXT } from '@/constants';
 
 export interface Organism {
   id: string;
   individual_id: string;
   species_name: string;
   sampling_site_name: string;
+  location_name: string;
   country_name: string;
   projects: string;
-  properties: string;
+  project_ids: string;
+  properties: { f2: string; f4: string }[]; // <-- Fix here
 }
 
 interface OrganismTableProps {
@@ -33,7 +36,7 @@ interface OrganismTableProps {
   headersGroupping?: any[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
 }
 
 export function OrganismsTable({
@@ -45,6 +48,19 @@ export function OrganismsTable({
   myRowsPerPageChangeEvent,
   myPageChangeEvent,
 }: OrganismTableProps): React.JSX.Element {
+  const isWebUrl = (value: unknown): value is string => {
+    if (typeof value !== 'string') {
+      return false;
+    }
+
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
   const rowIds = React.useMemo(() => {
     return rows.map((organism) => organism.id);
   }, [rows]);
@@ -65,7 +81,7 @@ export function OrganismsTable({
           <TableHead>
             <TableRow>
               <TableCell align="center" colSpan={1}></TableCell>
-              <TableCell align="center" colSpan={5}></TableCell>
+              <TableCell align="center" colSpan={6}></TableCell>
               {/* Add group of headers for dynamic properties */}
               {headersGroupping.length > 0 && headersGroupping.map((group) => (
                 <TableCell 
@@ -103,7 +119,8 @@ export function OrganismsTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => {
+            {
+            rows.map((row) => {
               const isSelected = selected?.has(row.id);
               const propertiesRow = row.properties.reduce((acc, obj) => {
                     acc[obj.f2] = obj.f4;
@@ -135,9 +152,25 @@ export function OrganismsTable({
                   <TableCell>{row.country_name}</TableCell>
                   <TableCell>{row.projects}</TableCell>
                   {/* Render dynamic properties */}
-                  {flatHeaders.length > 0 && flatHeaders.map((key) => (
-                  <TableCell key={`${row.id}-${key}`}>{propertiesRow[key] ? propertiesRow[key] : '-'}</TableCell>
-                  ))}
+                  {flatHeaders.length > 0 && flatHeaders.map((key) => {
+                    const propertyValue = propertiesRow[key];
+
+                    return (
+                      <TableCell key={`${row.id}-${key}`}>
+                        {propertyValue ? (
+                          isWebUrl(propertyValue) ? (
+                            <a href={propertyValue} target="_blank" rel="noopener noreferrer">
+                              {propertyValue}
+                            </a>
+                          ) : (
+                            propertyValue
+                          )
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
             })}
@@ -148,7 +181,7 @@ export function OrganismsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

@@ -22,6 +22,8 @@ import type { Project } from '@/components/dashboard/projects/projects-table';
 import { paths } from '@/paths';
 import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
 import { useUser } from '@/hooks/use-user';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getProjectsRequest, deleteProjectRequest } from '@/api/projects';
 
@@ -30,6 +32,7 @@ export default function Page(): React.JSX.Element {
   const [projects, setProjects] = useState([]);
   const isMounted = useRef(false);
   const { user } = useUser();
+  const brandTitle = useBrandTitle();
 
   const fetchProjects = async () => {
     try {
@@ -51,18 +54,18 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Projects | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Projects | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   //State for the operation result messages
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [errorMessage, setErrorMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   //Code for the delete dialog
   const [open, setOpen] = React.useState(false);
   const [deleteName, setDeleteName] = React.useState("");
-  const [deleteId, setDeleteId] = React.useState(null);
+  const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
   //Handle the opening and closing of the dialog to delete
@@ -95,7 +98,7 @@ export default function Page(): React.JSX.Element {
         throw new Error('Project ID is null or undefined when trying to delete');
       }
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
         const errorMessage = JSON.parse(error.request.response).message;
         setErrorMessage(String(errorMessage));
       } else {
@@ -131,7 +134,7 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };
@@ -139,6 +142,35 @@ export default function Page(): React.JSX.Element {
   const handleAddClick = () => {
     router.push(paths.dashboard.projectCreate);
   };
+
+
+  //Code for the must read dialog
+    const [openMustRead, setOpenMustRead] = React.useState(false);
+    const [mustReadTitle, setMustReadTitle] = React.useState("");
+    const [mustReadContent, setMustReadContent] = React.useState("");
+  
+    const handleMustReadClickOpen = async(pMstReadTitle: string, pMustReadContent: string) => {
+      try {
+        if(!openMustRead && pMustReadContent && pMustReadContent.length > 0){
+
+          setMustReadTitle(pMstReadTitle);
+          setMustReadContent(pMustReadContent);
+          
+          setOpenMustRead(true);
+        }
+        
+        } catch (error) {
+            console.error('Error fetching must read content:', error);
+        }
+    };
+  
+    const handleCloseMustRead = () => {
+      setMustReadTitle('');
+      setMustReadContent('');
+      setOpenMustRead(false);
+    };
+  
+
 
   return (
       <Stack spacing={3}>
@@ -164,6 +196,7 @@ export default function Page(): React.JSX.Element {
           myPageChangeEvent={handleChangePage}
           handleClickOpen={handleClickOpen}
           handleUpdateClick={handleUpdateClick}
+          handleMustReadClickOpen={handleMustReadClickOpen}
         />
         <Dialog
         open={open}
@@ -186,6 +219,24 @@ export default function Page(): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog
+          open={openMustRead}
+          onClose={handleCloseMustRead}
+          aria-labelledby="alert-must-read-dialog-title"
+          aria-describedby="alert-must-read-dialog-content"
+          >
+          <DialogTitle id="alert-must-read-dialog-title">
+            {`Must Read: ${mustReadTitle}`}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-must-read-dialog-content" sx={{ whiteSpace: 'pre-wrap', color: 'text.primary' }}>
+              {mustReadContent}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseMustRead}>Close</Button>
+          </DialogActions>
+        </Dialog>
         <Stack ref={errorRef} spacing={3} sx={{ mt: 1, mb: 3 }}>
           {errorMessage ? <Alert color="error">{errorMessage}</Alert> : null}
           {successMessage ? <Alert color="success">{successMessage}</Alert> : null}

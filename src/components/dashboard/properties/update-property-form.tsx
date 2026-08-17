@@ -15,7 +15,7 @@ import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
@@ -26,6 +26,8 @@ import Chip from '@mui/material/Chip';
 import { Plus as AddIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { DATA_TYPE_TEXT } from '@/constants';
 
@@ -38,9 +40,10 @@ const schema = zod.object({
   description: zod.string().min(1, { message: 'Description is required' }),
   data_type_id: zod.number().min(1, { message: 'The type of data is required' }),
   is_column_required: zod.boolean(),
-  template_column_name: zod.string(zod.any(), { message: 'The template column name is required' }).nullable().optional(),
-  pre_defined_values: zod.string(zod.any(), { message: 'Enter valid pre-defined values' }).nullable().optional(),
-  protocol: zod.string().nullable().optional()
+  template_column_name: zod.string().min(0, { message: 'The template column name is required' }).nullable().optional(),
+  pre_defined_values: zod.string().min(0, { message: 'Enter valid pre-defined values' }).nullable().optional(),
+  protocol: zod.string().nullable().optional(),
+  req_project_must_read: zod.boolean(),
 }).refine(data => !data.is_column_required || (data.template_column_name && data.template_column_name.length > 0), {
   message: 'Please provide the column corresponding to the property in the batch template.',
   path: ['template_column_name']
@@ -69,21 +72,22 @@ export function UpdatePropertyForm(): React.JSX.Element {
       template_column_name: '',
       is_column_required: false,
       protocol: '',
+      req_project_must_read: false,
     },
    });
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [listDataTypes, setListDataTypes] = useState([]);
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const [propertyId, setPropertyId] = useState(params.id);
   const [traitName, setTraitName] = useState<string>('');
   const [traitLocationAssociated, setTraitLocationAssociated] = useState<boolean>(false);
   const [inputPropertyDefaultValue, setInputPropertyDefaultValue] = useState<string>('');
-  const [selectedPropertyDefaultValues, setSelectedPropertyDefaultValues] = React.useState<string>([]);
-    const [selectedDataType, setSelectedDataType] = React.useState<number>(0);
-
+  const [selectedPropertyDefaultValues, setSelectedPropertyDefaultValues] = React.useState<string[]>([]);
+  const [selectedDataType, setSelectedDataType] = React.useState<number>(0);
+  const brandTitle = useBrandTitle();
   const isMounted = useRef(false);
   
   useEffect(() => {
@@ -100,10 +104,11 @@ export function UpdatePropertyForm(): React.JSX.Element {
                       data_type_id: responseProperty.data[0].data_type_id,
                       template_column_name: responseProperty.data[0].template_column_name == null ? '' : responseProperty.data[0].template_column_name,
                       pre_defined_values: responseProperty.data[0].pre_defined_values == null ? '' : responseProperty.data[0].pre_defined_values,
-                      protocol: responseProperty.data[0].protocol == null ? '' : responseProperty.data[0].protocol,});
+                      protocol: responseProperty.data[0].protocol == null ? '' : responseProperty.data[0].protocol,
+                      req_project_must_read: responseProperty.data[0].req_project_must_read,});
 
               setTraitName(responseProperty.data[0].trait_name);
-              document.title = `Update Property: ${responseProperty.data[0].name} | Dashboard | ${config.site.name}`;
+              document.title = `Update Property: ${responseProperty.data[0].name} | ${brandTitle}`;
 
               setSelectedDataType(responseProperty.data[0].data_type_id);
               //setValue('data_type_id', responseProperty.data[0].data_type_id);
@@ -155,7 +160,7 @@ export function UpdatePropertyForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -172,8 +177,8 @@ export function UpdatePropertyForm(): React.JSX.Element {
       [router, reset, setError]
     );
 
-  const handleDataTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-        const value = event.target.value as number;
+  const handleDataTypeChange = (event: SelectChangeEvent<number>) => {
+        const value = Number(event.target.value);
         setSelectedDataType(value);
         setValue('data_type_id', value);
         clearErrors('data_type_id'); // Clear the error for the data_type_id field
@@ -211,7 +216,9 @@ export function UpdatePropertyForm(): React.JSX.Element {
   
     const handleDeleteChosenDefaultValue = (value_delete: string) => () => {
       setSelectedPropertyDefaultValues(selectedPropertyDefaultValues.filter(property => property !== value_delete));
-  
+
+      setValue('pre_defined_values', selectedPropertyDefaultValues.filter(property => property !== value_delete).join("/"));
+
     };
 
   return (
@@ -238,7 +245,7 @@ export function UpdatePropertyForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
-                  <OutlinedInput {...field} label="Description" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Description" type="text" multiline={true} minRows={4}/>
                   {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
                 </FormControl>
                 )}
@@ -254,6 +261,11 @@ export function UpdatePropertyForm(): React.JSX.Element {
                   ))}
                 </Select>
               {errors.data_type_id ? <FormHelperText>{errors.data_type_id.message}</FormHelperText> : null}
+              {selectedDataType === DATA_TYPE_TEXT ? (
+                <FormHelperText>
+                  This data type can be used to register URLs to external datasets. In the Organisms table, the recorded value will be shown as a link only when the provided value has a valid URL format.
+                </FormHelperText>
+              ) : null}
             </FormControl>
 
             {/* Only properties that not associated with location require a column */}
@@ -314,8 +326,27 @@ export function UpdatePropertyForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.protocol)}>
                   <InputLabel>Protocol</InputLabel>
-                  <OutlinedInput {...field} label="Protocol" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Protocol" type="text" multiline={true} minRows={4}/>
                   {errors.protocol ? <FormHelperText>{errors.protocol.message}</FormHelperText> : null}
+                </FormControl>
+                )}
+            />
+            <Controller
+                control={control}
+                name="req_project_must_read"
+                render={({ field }) => (
+                <FormControl fullWidth >
+                  <InputLabel>Require must read in projects</InputLabel>
+                  <Select
+                    {...field}
+                    onChange={e => field.onChange(e.target.value === 'true')}
+                    label="Require must read in projects"
+                    variant="outlined"
+                  >
+                    <MenuItem value={'true'}>Yes</MenuItem>
+                    <MenuItem value={'false'}>No</MenuItem> 
+                  </Select>
+                  <FormHelperText>If 'Yes', when the user downloads organism data for this property, the system displays the 'Must read' information of the projects associated with the organisms before proceeding with the data download.</FormHelperText>
                 </FormControl>
                 )}
             />

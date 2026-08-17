@@ -1,0 +1,240 @@
+"use client";
+import * as React from 'react';
+import {useEffect, useState, useRef} from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import type { Metadata } from 'next';
+import Alert from '@mui/material/Alert';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import { Leaf as PropertyIcon } from '@phosphor-icons/react/dist/ssr/Leaf';
+import { config } from '@/config';
+import { UpdateLocationForm } from '@/components/dashboard/locations/update-location-form';
+import { TraitsTable } from '@/components/dashboard/traits/traits-location-table-collapsible';
+import type { Trait } from '@/components/dashboard/traits/traits-location-table-collapsible';
+import { paths } from '@/paths';
+import { getTraitsRequest, deleteTraitRequest } from '@/api/traits';
+import { getAllPropertiesByLocation, deletePropertyFromLocation } from  '@/api/locationProperties';
+import { AxiosError } from 'axios';
+
+
+export default function Page(): React.JSX.Element {
+  const router = useRouter();
+  const [locationProperties, setLocationProperties] = useState([]);
+  const params = useParams<{ id: string }>();
+  const pLocationtId = params.id; //Obtain the trait id from the URL
+  const isMounted = useRef(false);
+  
+    const fetchLocationProperties = async () => {
+      try {
+        if (!isMounted.current) {
+          isMounted.current = true;
+          const response = await getAllPropertiesByLocation(pLocationtId); 
+          //setLocationProperties(response.data);
+          console.log('Location properties:', response.data);
+
+          //Group the properties data by trait
+          interface GroupedProperty {
+            property_id: number;
+            property_name: string;
+            property_description: string;
+            data_type_name: string;
+            value: any;
+            location_property_id: number;
+          }
+
+          interface GroupedTrait {
+            id: number;
+            trait_name: string;
+            trait_description: string;
+            trait_type_name: string;
+            properties: GroupedProperty[];
+          }
+
+          interface ResponseDataItem {
+            id: number;
+            trait_name: string;
+            trait_description: string;
+            trait_type_name: string;
+            property_id: number;
+            property_name: string;
+            property_description: string;
+            data_type_name: string;
+            value: any;
+            location_property_id: number;
+          }
+
+          const grouped: GroupedTrait[] = (response.data as ResponseDataItem[]).reduce<GroupedTrait[]>((acc, curr) => {
+            const existingGroup = acc.find((group) => group.id === curr.id);
+
+            if (existingGroup) {
+              existingGroup.properties.push({ 
+                property_id: curr.property_id,
+                property_name: curr.property_name, 
+                property_description: curr.property_description,
+                data_type_name: curr.data_type_name,
+                value: curr.value,
+                location_property_id: curr.location_property_id
+              });
+            } else {
+              acc.push({ 
+                id: curr.id, 
+                trait_name: curr.trait_name,
+                trait_description: curr.trait_description,
+                trait_type_name: curr.trait_type_name,
+                properties: [{ 
+                  property_id: curr.property_id,
+                  property_name: curr.property_name, 
+                  property_description: curr.property_description,
+                  data_type_name: curr.data_type_name,
+                  value: curr.value,
+                  location_property_id: curr.location_property_id
+                }] 
+              });
+            }
+
+            return acc;
+          }, []);
+          setLocationProperties(grouped);
+
+
+        }
+      } catch (error) {
+        console.error('Error fetching location traits and properties:', error);
+      }
+    };
+  
+    useEffect(() => {
+      void fetchLocationProperties();
+  
+    }, []);
+
+    //Add title to the page
+      useEffect(() => {
+        document.title = `Update | Location | Dashboard | ${config.site.name}`;
+      }, []);
+    
+
+     //State for the operation result messages
+      const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+      const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+    
+      //Code for the delete dialog
+      const [open, setOpen] = React.useState(false);
+      const [deleteName, setDeleteName] = React.useState("");
+      const [deleteId, setDeleteId] = React.useState<number | null>(null); //Property ID to delete
+      const errorRef = React.useRef<HTMLDivElement>(null);
+    
+      const handleClickOpen = (idProperty: number, nameProperty: string) => {
+        setDeleteId(idProperty);
+        setDeleteName(nameProperty);
+        setSuccessMessage(null);
+        setErrorMessage(null);
+        setOpen(true);
+      };
+    
+      const handleClose = () => {
+        setDeleteId(null);
+        setDeleteName('');
+        setOpen(false);
+      };
+    
+      const handleDelete = async () => {
+        // Perform delete operation here
+        setSuccessMessage(null);
+        setErrorMessage(null);
+        try{
+          if (deleteId) {
+            await deletePropertyFromLocation(deleteId);
+            setSuccessMessage(`The property ${deleteName} was eliminated successfully!`);
+             // Refresh the traits table
+            isMounted.current = false;
+            await fetchLocationProperties();
+          } else {
+            throw new Error('ID of the object is null or undefined when trying to delete');
+          }
+        }catch(error){
+          if (error instanceof AxiosError && error.request && error.request.response) {
+            const errorMessage = JSON.parse(error.request.response).message;
+            setErrorMessage(String(errorMessage));
+          } else {
+            setErrorMessage(String(error));
+          }
+        }
+        console.log('Item deleted');
+        handleClose();
+    
+        //Scroll to the error message
+        if (errorRef.current) {
+          errorRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    
+      };
+    
+      const handleClickUpdate = (idPropertyLocation: number) => {
+        console.log(`************************************* ${idPropertyLocation}`);
+        router.push(paths.dashboard.locationPropertyUpdate(idPropertyLocation));
+      };
+
+      const handleAddPropertyClick = () => {
+        router.push(paths.dashboard.locationPropertiesAdd(pLocationtId));
+      }
+
+    return (
+    <Stack spacing={3}>
+      <div>
+        <Typography variant="h4">Location information</Typography>
+      </div>
+      <UpdateLocationForm />
+      <Stack direction="row" spacing={3}>
+          <div>
+            <Button variant="contained" color="inherit" onClick={handleAddPropertyClick} startIcon={<PropertyIcon fontSize="var(--icon-fontSize-md)" />} variant="contained">
+            Add property
+            </Button>
+          </div>
+        </Stack>
+      <TraitsTable
+                count={locationProperties.length}
+                page={0}
+                rows={locationProperties}
+                handleClickOpen={handleClickOpen}
+                handleUpdateClick={handleClickUpdate}
+              />
+      <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {`Are you sure you want to delete ${deleteName} from the location?`}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleDelete} autoFocus>
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Stack ref={errorRef} spacing={3} sx={{ mt: 1, mb: 3 }}>
+          {errorMessage ? <Alert color="error">{errorMessage}</Alert> : null}
+          {successMessage ? <Alert color="success">{successMessage}</Alert> : null}
+        </Stack>
+    </Stack>
+    
+  );
+}
+
+function applyPagination(rows: Trait[], page: number, rowsPerPage: number): Trait[] {
+  return rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+}

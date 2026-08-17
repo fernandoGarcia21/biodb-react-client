@@ -21,10 +21,10 @@ import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/material/styles';
-
+import { AxiosError } from 'axios';
 
 import { createBatchRequest } from '@/api/batch';
-import { BATCH_TYPE_UPLOAD_ORANISMS_ID } from '@/constants';
+import { BATCH_TYPE_UPLOAD_ORANISMS_ID, API } from '@/constants';
 
   //Maximum file size allowed is 
   const MAX_FILE_SIZE = 10000000;
@@ -40,7 +40,7 @@ import { BATCH_TYPE_UPLOAD_ORANISMS_ID } from '@/constants';
 
   const schema = zod.object({
     batch_name: zod.string().min(1, { message: 'Name is required' }),
-    fileBatch: zod.any().refine((file: File) => file?.length !== 0, {
+    fileBatch: zod.any().refine((file: File) => !!file, {
       message: "An input file is required"
     }).refine((file) => file.size < MAX_FILE_SIZE, `Max size is ${(MAX_FILE_SIZE / (1024)).toFixed(0)} KB.`)
       .refine((file) => checkFileType(file), "Only .csv format is supported."),
@@ -54,7 +54,7 @@ export function BatchCreateOrganismsForm(): React.JSX.Element {
   const router = useRouter();
   const [isPending, setIsPending] = React.useState<boolean>(false);
   const [fileTypes, setFileTypes] = React.useState([".CSV"]);
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [uploadFileName , setUploadFileName] = React.useState(null);
   const [uploadFileSize , setUploadFileSize] = React.useState(0);
   const { user } = useUser();
@@ -101,7 +101,7 @@ export function BatchCreateOrganismsForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -118,7 +118,7 @@ export function BatchCreateOrganismsForm(): React.JSX.Element {
       [router, reset, setError]
     );
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
         reset({ fileBatch: file });
@@ -128,8 +128,8 @@ export function BatchCreateOrganismsForm(): React.JSX.Element {
       }
     };
 
-    const bytesToKB = (bytes) => {
-      return (bytes / (1024)).toFixed(2);
+    const bytesToKB = (bytes: number): number => {
+      return Math.round((bytes / 1024) * 100) / 100;
     }
 
     const VisuallyHiddenInput = styled('input')({
@@ -154,7 +154,7 @@ export function BatchCreateOrganismsForm(): React.JSX.Element {
           <Typography variant="body2" sx={{ mt: 2 }}>
               Need a template?{' '}
               <a
-                href="/assets/TemplateOrganisms.csv"
+                href={`${API}/files/TemplateOrganisms.csv`}
                 download
                 style={{ textDecoration: 'none', color: 'blue' }}
               >
@@ -184,13 +184,13 @@ export function BatchCreateOrganismsForm(): React.JSX.Element {
                       />
                     </Button>
 
-                  {errors.fileBatch ? <FormHelperText>{errors.fileBatch.message}</FormHelperText> : undefined}
+                  {errors.fileBatch && typeof errors.fileBatch.message === 'string' ? (<FormHelperText>{errors.fileBatch.message}</FormHelperText>) : null}
                 </FormControl>
                 )}
             />
             <Typography variant="h5">{uploadFileName}</Typography>
             <Typography color="text.secondary" variant="body2">
-              {uploadFileSize} KB
+              {uploadFileSize > 0 ? `${uploadFileSize.toFixed(2)} KB` : '' }
             </Typography>
           </Stack>
           <Stack spacing={3} sx={{ mt: 2 }}>

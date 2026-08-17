@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -15,6 +16,7 @@ import type { SxProps } from '@mui/material/styles';
 import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
 import { DotsThreeVertical as DotsThreeVerticalIcon } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
 import dayjs from 'dayjs';
+import { paths } from '@/paths';
 
 export interface Dataset {
   id: string;
@@ -25,11 +27,17 @@ export interface Dataset {
 }
 
 export interface LatestDatasetsProps {
-  dataset?: Dataset[];
+  datasets?: Dataset[];
   sx?: SxProps;
 }
 
 export function LatestDatasets({ datasets = [], sx }: LatestDatasetsProps): React.JSX.Element {
+  const router = useRouter();
+
+  const handleDatasetClick = () => {
+    router.push(paths.dashboard.organisms());
+  };
+
   return (
     <Card sx={sx}>
       <CardHeader title="Latest datasets" />
@@ -61,9 +69,11 @@ export function LatestDatasets({ datasets = [], sx }: LatestDatasetsProps): Reac
             </ListItemAvatar>
             <ListItemText
               primary={dataset.name}
-              primaryTypographyProps={{ variant: 'subtitle1' }}
+              primaryTypographyProps={{ variant: 'subtitle1', sx: { cursor: 'pointer' } }}
               secondary={`Uploaded ${dayjs(dataset.updatedAt).format('MMM D, YYYY')}`}
               secondaryTypographyProps={{ variant: 'body2' }}
+              onClick={handleDatasetClick}
+              sx={{ cursor: 'pointer' }}
             />
             <IconButton edge="end">
               <DotsThreeVerticalIcon weight="bold" />

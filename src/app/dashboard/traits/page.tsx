@@ -20,17 +20,20 @@ import { TraitsFilters } from '@/components/dashboard/traits/traits-filters';
 import { TraitsTable } from '@/components/dashboard/traits/traits-table';
 import type { Trait } from '@/components/dashboard/traits/traits-table';
 import { paths } from '@/paths';
+import { AxiosError } from 'axios';
 
 import { getTraitsRequest } from '../../../api/traits';
 import { deleteTraitRequest } from '../../../api/traits';
 import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
 import { useUser } from '@/hooks/use-user';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [traits, setTraits] = useState([]);
   const isMounted = useRef(false);
   const { user } = useUser();
+  const brandTitle = useBrandTitle();
 
   const fetchTraits = async () => {
     try {
@@ -52,18 +55,18 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Traits | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Traits | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   //State for the operation result messages
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [errorMessage, setErrorMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   //Code for the delete dialog
   const [open, setOpen] = React.useState(false);
   const [deleteName, setDeleteName] = React.useState("");
-  const [deleteId, setDeleteId] = React.useState(null);
+  const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
   const handleClickOpen = (idTrait: number, nameTrait: string) => {
@@ -95,7 +98,7 @@ export default function Page(): React.JSX.Element {
         throw new Error('Trait ID is null or undefined when trying to delete');
       }
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
         const errorMessage = JSON.parse(error.request.response).message;
         setErrorMessage(String(errorMessage));
       } else {
@@ -131,7 +134,7 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };
@@ -146,7 +149,7 @@ export default function Page(): React.JSX.Element {
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">Traits list</Typography>
           </Stack>
-          {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+          {(user?.levelId === USER_LEVEL_ADMIN) && (
             <div>
               <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
                 Add

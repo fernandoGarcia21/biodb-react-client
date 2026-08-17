@@ -29,10 +29,11 @@ import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/material/styles';
+import { AxiosError } from 'axios';
 
 import { createBatchRequest } from '@/api/batch';
 import { getPropertiesTraitRequest } from '@/api/properties';
-import { BATCH_TYPE_DELETE_ORANISMS_ID } from '@/constants';
+import { BATCH_TYPE_DELETE_ORANISMS_ID, API } from '@/constants';
 
 
   //Maximum file size allowed is 
@@ -48,10 +49,11 @@ import { BATCH_TYPE_DELETE_ORANISMS_ID } from '@/constants';
 }
 
   const schema = zod.object({
-    fileBatch: zod.any().refine((file: File) => file?.length !== 0, {
-      message: "An input file is required"
-    }).refine((file) => file.size < MAX_FILE_SIZE, `Max size is ${(MAX_FILE_SIZE / (1024)).toFixed(0)} KB.`)
-      .refine((file) => checkFileType(file), "Only .csv format is supported."),
+    fileBatch: zod.any().refine((file: File) => !!file, {
+          message: "An input file is required"
+        }).refine((file) => file.size < MAX_FILE_SIZE, `Max size is ${(MAX_FILE_SIZE / (1024)).toFixed(0)} KB.`)
+          .refine((file) => checkFileType(file), "Only .csv format is supported."),
+
     is_delete_organisms: zod.boolean({ message: 'Indication of what information to be deleted is required.' }),
       list_delete_properties: zod.array(zod.any(), { message: 'List of properties to be deleted must be an array.' }).optional()
     })
@@ -65,27 +67,12 @@ type Values = zod.infer<typeof schema>;
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
-const GroupHeader = styled('div')(({ theme }) => ({
-  position: 'sticky',
-  top: '-8px',
-  padding: '4px 10px',
-  color: theme.palette.primary.main,
-  backgroundColor: lighten(theme.palette.primary.light, 0.85),
-  ...theme.applyStyles('dark', {
-    backgroundColor: darken(theme.palette.primary.main, 0.8),
-  }),
-}));
-
-const GroupItems = styled('ul')({
-  padding: 0,
-});
-
 
 export function BatchDeleteOrganismsForm(): React.JSX.Element {
   const router = useRouter();
   const [isPending, setIsPending] = React.useState<boolean>(false);
   const [fileTypes, setFileTypes] = React.useState([".CSV"]);
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [uploadFileName , setUploadFileName] = React.useState(null);
   const [uploadFileSize , setUploadFileSize] = React.useState(0);
   const { user } = useUser();
@@ -107,7 +94,7 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
     } = useForm<Values>({ resolver: zodResolver(schema),
       defaultValues: {
         fileBatch: undefined,
-        is_delete_organisms: false,
+        is_delete_organisms: true,
         list_delete_properties: [],
       },
      });
@@ -167,7 +154,7 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -184,15 +171,23 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
       [router, reset, setError]
     );
 
-    const handleChange = (e) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        setValue('fileBatch', file );
-        setUploadFileName(file.name);
-        setUploadFileSize(bytesToKB(file.size));
-        clearErrors('fileBatch'); // Clear the error for the fileBatch field
-      }
-    };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const file = e.target.files?.[0];
+          if (file) {
+           reset({
+              fileBatch: file,
+              is_delete_organisms: watch('is_delete_organisms'),
+              list_delete_properties: watch('list_delete_properties'),
+            });
+            setUploadFileName(file.name);
+            // Convert bytes to KB and set the size
+            setUploadFileSize(bytesToKB(file.size));
+          }
+        };
+
+    const bytesToKB = (bytes: number): number => {
+      return Math.round((bytes / 1024) * 100) / 100;
+    }
 
 
     const handlePropertiesChange = (_, value) => {
@@ -200,11 +195,7 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
       clearErrors('list_delete_properties'); // Clear the error for the list_delete_properties field
     };
 
-    const bytesToKB = (bytes) => {
-      return (bytes / (1024)).toFixed(0);
-    }
 
- 
 
   const VisuallyHiddenInput = styled('input')({
       clip: 'rect(0 0 0 0)',
@@ -235,6 +226,9 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
         <Divider />
         <CardContent>
           <Stack spacing={1} sx={{ textAlign: 'left' }}>
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              The file should contain a list of individual IDs to delete including the column header ORGANISM ID.
+            </Typography>
           <Controller
                 control={control}
                 name="fileBatch"
@@ -258,7 +252,9 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
                       />
                     </Button>
 
-                  {errors.fileBatch ? <FormHelperText>{errors.fileBatch.message}</FormHelperText> : undefined}
+                  {errors.fileBatch && typeof errors.fileBatch.message === 'string' ? (
+  <FormHelperText>{errors.fileBatch.message}</FormHelperText>
+) : null}
                 </FormControl>
                 )}
             />

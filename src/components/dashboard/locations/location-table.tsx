@@ -43,7 +43,7 @@ interface LocationsTableProps {
   rows?: Location[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
   handleDeleteClickOpen: (id: number, name: string) => void;
   handleUpdateClick: (id: number) => void;
 }
@@ -91,7 +91,7 @@ export function LocationsTable({
               <TableCell>Id</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Country</TableCell>
-              {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+              {(user?.levelId === USER_LEVEL_ADMIN) && (<>
                 <TableCell>Update</TableCell>
                 <TableCell>Delete</TableCell>
               </>)}
@@ -128,7 +128,7 @@ export function LocationsTable({
                     </Stack>
                   </TableCell>
                   <TableCell>{row.country_name}</TableCell>
-                  {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                  {(user?.levelId === USER_LEVEL_ADMIN) && (<>
                     <TableCell>
                       <IconButton aria-label="update"
                         onClick={() => { handleUpdateClick(Number(row.id)); }}>
@@ -161,7 +161,7 @@ export function LocationsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

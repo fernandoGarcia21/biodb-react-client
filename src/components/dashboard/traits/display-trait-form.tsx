@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
 import { Typography } from '@mui/material';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getTraitRequest } from '@/api/traits';
 
@@ -51,8 +52,9 @@ export function DisplayTraitForm(): React.JSX.Element {
    });
 
 
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const [traitId, setTraitId] = useState(params.id);
+  const brandTitle = useBrandTitle();
 
   const isMounted = useRef(false);
   
@@ -69,7 +71,7 @@ export function DisplayTraitForm(): React.JSX.Element {
                       trait_type_id: responseTrait.data[0].trait_type_id,
                       trait_type_name: responseTrait.data[0].trait_type_name,
                       is_location_associated: responseTrait.data[0].is_location_associated });
-              document.title = `Update Trait: ${responseTrait.data[0].name} | Dashboard | ${config.site.name}`;
+              document.title = `Display Trait: ${responseTrait.data[0].name} | ${brandTitle}`;
             }
           }
         } catch (error) {

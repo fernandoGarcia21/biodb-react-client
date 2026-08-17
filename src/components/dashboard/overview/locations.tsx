@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 import { Chart } from '@/components/core/chart';
 
 export interface LocationsProps {
-  chartSeries: { name: string; data: number[] }[];
+  chartSeries: { id: number; name: string; data: number[] }[];
   customCategories?: string[];
   sx?: SxProps;
 }
@@ -35,13 +35,13 @@ export function Locations({ chartSeries, customCategories, sx }: LocationsProps)
         title="Samples by location"
       />
         <CardContent>
-          <Chart height={350} options={chartOptions} series={chartSeries} type="bar" width="100%" />
+          <Chart height={250} options={chartOptions} series={chartSeries} type="bar" width="100%" />
         </CardContent>
       <Divider />
       <CardActions sx={{ justifyContent: 'flex-end' }}>
         <Button color="inherit" endIcon={<ArrowRightIcon fontSize="var(--icon-fontSize-md)" />} size="small"
         onClick={() => {
-            router.push(paths.dashboard.organisms);
+            router.push(paths.dashboard.organisms());
           }}>
           Explore data
         </Button>

@@ -29,8 +29,8 @@ export interface UserPopoverProps {
 export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): React.JSX.Element {
   const { checkSession } = useUser();
 
-  const { person } = useContext(UserContext);
-  console.log('THE PERSON IS: ', person);
+  const userContext = useContext(UserContext);
+  const person = userContext?.person;
 
   const router = useRouter();
 
@@ -45,7 +45,7 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
 
       // Refresh the auth state
       await checkSession?.();
-
+      onClose();
       // UserProvider, for this case, will not refresh the router and we need to do it manually
       router.refresh();
       // After refresh, AuthGuard will handle the redirect
@@ -63,25 +63,27 @@ export function UserPopover({ anchorEl, onClose, open }: UserPopoverProps): Reac
       slotProps={{ paper: { sx: { width: '240px' } } }}
     >
       <Box sx={{ p: '16px 20px ' }}>
-        <Typography variant="subtitle1">{person ? `${person.firstName } ${person.lastName}` : ''}</Typography>
+        <Typography variant="subtitle1">{person ? `${person.first_name} ${person.family_name}` : ''}</Typography>
         <Typography color="text.secondary" variant="body2">
         {person ? person.email : ''}
         </Typography>
       </Box>
       <Divider />
       <MenuList disablePadding sx={{ p: '8px', '& .MuiMenuItem-root': { borderRadius: 1 } }}>
-        <MenuItem component={RouterLink} href={paths.dashboard.settings} onClick={onClose}>
-          <ListItemIcon>
-            <GearSixIcon fontSize="var(--icon-fontSize-md)" />
-          </ListItemIcon>
-          Settings
-        </MenuItem>
-        <MenuItem component={RouterLink} href={paths.dashboard.account} onClick={onClose}>
-          <ListItemIcon>
-            <UserIcon fontSize="var(--icon-fontSize-md)" />
-          </ListItemIcon>
-          Profile
-        </MenuItem>
+        {/*
+          <MenuItem component={RouterLink} href={paths.dashboard.settings} onClick={onClose}>
+            <ListItemIcon>
+              <GearSixIcon fontSize="var(--icon-fontSize-md)" />
+            </ListItemIcon>
+            Settings
+          </MenuItem>
+          <MenuItem component={RouterLink} href={paths.dashboard.account} onClick={onClose}>
+            <ListItemIcon>
+              <UserIcon fontSize="var(--icon-fontSize-md)" />
+            </ListItemIcon>
+            Profile
+          </MenuItem>
+        */}
         <MenuItem onClick={handleSignOut}>
           <ListItemIcon>
             <SignOutIcon fontSize="var(--icon-fontSize-md)" />

@@ -26,6 +26,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
+import { AxiosError } from 'axios';
 
 import { createPersonRequest } from '@/api/persons';
 import { getUserLevelsRequest } from '@/api/userLevels';
@@ -52,9 +53,9 @@ type Values = zod.infer<typeof schema>;
 export function CreatePersonForm(): React.JSX.Element {
   const router = useRouter();
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [showCreateUserPannel, setShowCreateUserPannel] = React.useState(false);
-  const [listUserLevels, setListUserLevels] = useState([]);
+  const [listUserLevels, setListUserLevels] = useState<{ id: number; name: string }[]>([]);
   const [showPassword, setShowPassword] = React.useState(false);
 
   const {
@@ -118,7 +119,7 @@ export function CreatePersonForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).error ? JSON.parse(error.request.response).error : JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -214,7 +215,7 @@ export function CreatePersonForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.additional_info)}>
                   <InputLabel>Additional information</InputLabel>
-                  <OutlinedInput {...field} label="Additional information" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Additional information" type="text" multiline={true} minRows={4}/>
                   {errors.additional_info ? <FormHelperText>{errors.additional_info.message}</FormHelperText> : null}
                 </FormControl>
                 )}
@@ -240,7 +241,8 @@ export function CreatePersonForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.user_level_id)}>
                   <InputLabel>User level</InputLabel>
-                    <Select {...field} defaultValue="0" label="User level" variant="outlined">
+                    <Select {...field} value={field.value ?? 0}
+                    onChange={e => field.onChange(Number(e.target.value))} label="User level" variant="outlined">
                     <MenuItem value={0}>Select user level</MenuItem>
                       {listUserLevels.map((option) => (
                         <MenuItem key={option.id} value={option.id}>

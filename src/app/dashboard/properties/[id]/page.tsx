@@ -14,25 +14,32 @@ import Typography from '@mui/material/Typography';
 import { Download as DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { config } from '@/config';
 import { PropertiesFilters } from '@/components/dashboard/properties/properties-filters';
 import { PropertiesTable } from '@/components/dashboard/properties/properties-table';
 import type { Property } from '@/components/dashboard/properties/properties-table';
+import { AxiosError } from 'axios';
  
-import { getPropertyRequest, getTraitPropertiesRequest, deletePropertyRequest } from '@/api/properties';
+import { getPropertyRequest, getTraitPropertiesRequest, deletePropertyRequest, getPropertiesWithProtocolPdfRequest } from '@/api/properties';
 import { getTraitRequest } from '@/api/traits';
 import { paths } from '@/paths';
-import {BACKEND_ENDPOINT_URL_IMAGES} from '@/constants';
+import { useUser } from '@/hooks/use-user';
+import {BACKEND_ENDPOINT_URL_IMAGES, USER_LEVEL_ADMIN} from '@/constants';
 
 export default function Page(): React.JSX.Element {
 
   const router = useRouter();
   const [properties, setProperties] = useState([]);
+  const [propertyIds, setPropertyIds] = useState<number[]>([]);
   const [traitName, setTraitName] = useState<string>('');
+  const [isDownloadingProtocols, setIsDownloadingProtocols] = React.useState(false);
   const isMounted = useRef(false);
+  const { user } = useUser();
+  const brandTitle = useBrandTitle();
 
-  const params = useParams<{ id: int }>();
+  const params = useParams<{ id: string }>();
   const traitId = params.id;
   console.log(params);
 
@@ -45,7 +52,7 @@ export default function Page(): React.JSX.Element {
         const responseTrait = await getTraitRequest(traitId);
         if (responseTrait.data && responseTrait.data.length > 0) {
           setTraitName(responseTrait.data[0].name);
-          document.title = `Trait properties: ${responseTrait.data[0].name} | Dashboard | ${config.site.name}`;
+          document.title = `Trait properties: ${responseTrait.data[0].name} | ${brandTitle}`;
         }
 
         //fetch trait properties
@@ -74,13 +81,13 @@ export default function Page(): React.JSX.Element {
     };
 
   //State for the operation result messages
-    const [successMessage, setSuccessMessage] = React.useState(null);
-    const [errorMessage, setErrorMessage] = React.useState(null);
+    const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   
     //Code for the delete dialog
     const [open, setOpen] = React.useState(false);
     const [deleteName, setDeleteName] = React.useState("");
-    const [deleteId, setDeleteId] = React.useState(null);
+    const [deleteId, setDeleteId] = React.useState<number | null>(null);
     const errorRef = React.useRef<HTMLDivElement>(null);
   
     const handleDeleteClickOpen = (idProperty: number, nameProperty: string) => {
@@ -112,7 +119,7 @@ export default function Page(): React.JSX.Element {
           throw new Error('Property ID is null or undefined when trying to delete');
         }
       }catch(error){
-        if (error instanceof Error && error.request && error.request.response) {
+        if (error instanceof AxiosError && error.request && error.request.response) {
           const errorMessage = JSON.parse(error.request.response).message;
           setErrorMessage(String(errorMessage));
         } else {
@@ -155,6 +162,36 @@ export default function Page(): React.JSX.Element {
     return doc.body.innerHTML;
   };
 
+  // Function to handle the download of all protocols as a single PDF
+    const handleDownloadAllProtocols = async () => {
+      setSuccessMessage(null);
+      setErrorMessage(null);
+      setIsDownloadingProtocols(true);
+  
+      try {
+        // If propertyIds is empty, use all properties' IDs of the trait
+        const tmpPropertyIds = propertyIds.length > 0 ? propertyIds : properties.map((property: Property) => property.id);
+        const response = await getPropertiesWithProtocolPdfRequest(tmpPropertyIds);
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'all-property-protocols.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+  
+        setSuccessMessage('PDF generated successfully.');
+      } catch (error) {
+        setErrorMessage('Error generating protocols PDF.');
+        console.error('Error generating protocols PDF:', error);
+      } finally {
+        setIsDownloadingProtocols(false);
+      }
+    };
+  
+
   //Initialize the pagination of the table
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -169,7 +206,7 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };
@@ -212,27 +249,35 @@ export default function Page(): React.JSX.Element {
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography variant="h4">Trait {traitName} properties</Typography>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Button color="inherit" startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Import
-              </Button>
-              <Button color="inherit" startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
+              <Button
+                variant="outlined"
+                onClick={handleDownloadAllProtocols}
+                disabled={isDownloadingProtocols}
+                startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}
+              >
+                {isDownloadingProtocols ? 'Generating PDF...' : (propertyIds.length > 0 ? `Download ${propertyIds.length} protocols out of ${properties.length}` : 'Download all trait protocols')}
               </Button>
             </Stack>
           </Stack>
-          <div>
-            <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
-              Add
-            </Button>
-          </div>
+          {(user?.levelId === USER_LEVEL_ADMIN) && (
+            <div>
+              <Button startIcon={<PlusIcon fontSize="var(--icon-fontSize-md)" />} variant="contained" onClick={handleAddClick}>
+                Add
+              </Button>
+            </div>
+          )}
         </Stack>
-        <PropertiesFilters />
+        {//<PropertiesFilters /> is commented out for now, but can be enabled if needed
+        // but the filter functionality is not implemented yet
+        }
         <PropertiesTable
           count={properties.length}
           page={page}
           rows={paginatedProperties}
           rowsPerPage={rowsPerPage}
           showTraitName={false}
+          propertyIds={propertyIds}
+          setPropertyIds={setPropertyIds}
           myRowsPerPageChangeEvent={handleChangeRowsPerPage}
           myPageChangeEvent={handleChangePage}
           handleDeleteClickOpen={handleDeleteClickOpen}

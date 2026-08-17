@@ -20,7 +20,7 @@ import { Logo } from '@/components/core/logo';
 
 import { navItems } from './config';
 import { navIcons } from './nav-icons';
-import { protectedRoutes } from '@/protected-routes';
+import { protectedRoutes, hiddenLoginRoutes  } from '@/protected-routes';
 
 export interface MobileNavProps {
   onClose?: () => void;
@@ -35,9 +35,17 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
   //Check if the user is logged in and show only the necessary items, excluding protected routes
       const navItemsToShow = navItems.filter((item) => { 
     
+        //Find the hidden route that matches the item key;
+        //this is to hide routes like login or register when the user is logged in
+          const tmpHiddenLoginRoute = hiddenLoginRoutes.find((hiddRoute) =>  hiddRoute.navItemKey === item.key || hiddRoute.path === item.href );
+          if(tmpHiddenLoginRoute && user){
+            return false;
+          }
+
           //Find the protected route that matches the item key
+          //this is to show only the routes that the user has permission to access
           const tmpProtectedRoute = protectedRoutes.find((protRoute) =>  protRoute.navItemKey === item.key );
-    
+
         if (tmpProtectedRoute) {
           //Check if the user is logged in and validate the level of the logged user with the level of the protected route
           if(user){
@@ -59,6 +67,10 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
           }
           
         }
+
+
+
+
         return true;
       });
 
@@ -91,9 +103,18 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
       open={open}
     >
       <Stack spacing={2} sx={{ p: 3 }}>
-        <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-flex' }}>
+        <Box
+          component={RouterLink}
+          href={paths.home}
+          sx={{
+            display: 'inline-flex',
+            textDecoration: 'none',
+            '&:hover, &:focus, &:active, &:visited': { textDecoration: 'none' },
+          }}
+        >
           <Logo color="light" height={32} width={122} />
         </Box>
+        {/* Workspace: it is not implemented and not requiered for the database
         <Box
           sx={{
             alignItems: 'center',
@@ -115,6 +136,7 @@ export function MobileNav({ open, onClose }: MobileNavProps): React.JSX.Element 
           </Box>
           <CaretUpDownIcon />
         </Box>
+        */}
       </Stack>
       <Divider sx={{ borderColor: 'var(--mui-palette-neutral-700)' }} />
       <Box component="nav" sx={{ flex: '1 1 auto', p: '12px' }}>

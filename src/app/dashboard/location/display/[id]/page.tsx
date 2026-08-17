@@ -6,18 +6,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { config } from '@/config';
 import { DisplayLocationForm } from '@/components/dashboard/locations/display-location-form';
-
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
-  const router = useRouter();
-  const params = useParams<{ id: int }>();
-  const pLocationtId = params.id; //Obtain the trait id from the URL
-  const isMounted = useRef(false);
-
+  const brandTitle = useBrandTitle();
     //Add title to the page
       useEffect(() => {
-        document.title = `Update | Location | Dashboard | ${config.site.name}`;
-      }, []);
+        document.title = `Update | Location | ${brandTitle}`;
+      }, [brandTitle]);
     
 
     return (

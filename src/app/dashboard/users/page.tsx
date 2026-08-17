@@ -21,6 +21,8 @@ import { UsersFilters } from '@/components/dashboard/users/users-filters';
 import { UsersTable } from '@/components/dashboard/users/users-table';
 import type { User } from '@/components/dashboard/users/users-table';
 import { paths } from '@/paths';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
  
 import { getUsersRequest, activateUserRequest, deactivateUserRequest } from '@/api/users';
 import { USER_STATUS_ACTIVE, USER_STATUS_INACTIVE } from '@/constants';
@@ -28,9 +30,9 @@ import { useUser } from '@/hooks/use-user';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const isMounted = useRef(false);
-
+  const brandTitle = useBrandTitle();
 
   const fetchUsers = async () => {
     try {
@@ -51,8 +53,8 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Users | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Users | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   //Initialize the pagination of the table
@@ -68,18 +70,18 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
   };
 
   //State for the operation result messages
-    const [successMessage, setSuccessMessage] = React.useState(null);
-    const [errorMessage, setErrorMessage] = React.useState(null);
+    const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   //Code for the change status dialog
     const [open, setOpen] = React.useState(false);
     const [targetUserName, setTargetUserName] = React.useState("");
-    const [targetUserId, setTargetUserId] = React.useState(null);
+    const [targetUserId, setTargetUserId] = React.useState<number | null>(null);
     const [statusOperation, setStatusOperation] = React.useState("");
     const errorRef = React.useRef<HTMLDivElement>(null);
   
@@ -91,7 +93,7 @@ export default function Page(): React.JSX.Element {
 
       //Dynamically determine the operation to be performed to show in the dialog
       if (idUser) {
-        const tmpUser = users.find((user) => user.id === idUser);
+        const tmpUser = users.find((user) => Number(user.id) === idUser);
         if (tmpUser) {
           if(tmpUser.status_id === USER_STATUS_ACTIVE){
             setStatusOperation("inactivate");
@@ -118,7 +120,7 @@ export default function Page(): React.JSX.Element {
       setErrorMessage(null);
       try{
         if (targetUserId) {
-          const tmpUser = users.find((user) => user.id === targetUserId);
+          const tmpUser = users.find((user) => Number(user.id) === targetUserId);
           if (tmpUser) {
             if(tmpUser.status_id === USER_STATUS_ACTIVE){
               await deactivateUserRequest(targetUserId);
@@ -136,7 +138,7 @@ export default function Page(): React.JSX.Element {
           throw new Error('User ID is null or undefined when trying to change status');
         }
       }catch(error){
-        if (error instanceof Error && error.request && error.request.response) {
+        if (error instanceof AxiosError && error.request && error.request.response) {
           const errorMessage = JSON.parse(error.request.response).message;
           setErrorMessage(String(errorMessage));
         } else {

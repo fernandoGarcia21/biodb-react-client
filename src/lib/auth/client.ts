@@ -53,7 +53,7 @@ class AuthClient {
     return { error: 'Social authentication not implemented' };
   }
 
-  async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string }> {
+  async signInWithPassword(params: SignInWithPasswordParams): Promise<{ error?: string; personData: any | null }> {
     const { email, password } = params;
 
     // Make API request
@@ -73,13 +73,11 @@ class AuthClient {
 
     } catch (err){
       console.log(err);
-      return { error: err.message, personData: null};
-  }
-
-    const token = generateToken();
-    localStorage.setItem('custom-auth-token', token);
-
-    return {};
+      const errorMessage = err.response?.status === 401 
+        ? 'Invalid email or password. Please try again.' 
+        : err.message || 'An error occurred during login';
+      return { error: errorMessage, personData: null};
+    }
   }
 
   async resetPassword(_: ResetPasswordParams): Promise<{ error?: string }> {

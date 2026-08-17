@@ -19,16 +19,19 @@ import { config } from '@/config';
 import { TypeDatasetsTable } from '@/components/dashboard/typedatasets/typedatasets-table';
 import type { TypeDataset } from '@/components/dashboard/typedatasets/typedatasets-table';
 import { paths } from '@/paths';
+import { AxiosError } from 'axios';
 
 import { getTypeDatasetsRequest, deleteTypeDatasetRequest } from '@/api/typeDatasets';
 import { USER_LEVEL_ADMIN } from '@/constants';
 import { useUser } from '@/hooks/use-user';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
   const [typeDatasets, setTypeDatasets] = useState([]);
   const isMounted = useRef(false);
   const { user } = useUser();
+  const brandTitle = useBrandTitle();
 
   const fetchTypeDatasets = async () => {
     try {
@@ -50,18 +53,18 @@ export default function Page(): React.JSX.Element {
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Type Datasets | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Type Datasets | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   //State for the operation result messages
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [errorMessage, setErrorMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   //Code for the delete dialog
   const [open, setOpen] = React.useState(false);
   const [deleteName, setDeleteName] = React.useState("");
-  const [deleteId, setDeleteId] = React.useState(null);
+  const [deleteId, setDeleteId] = React.useState<number | null>(null);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
   //Handle the opening and closing of the dialog to delete
@@ -94,7 +97,7 @@ export default function Page(): React.JSX.Element {
         throw new Error('Type Dataset ID is null or undefined when trying to delete');
       }
     }catch(error){
-      if (error instanceof Error && error.request && error.request.response) {
+      if (error instanceof AxiosError && error.request && error.request.response) {
         const errorMessage = JSON.parse(error.request.response).message;
         setErrorMessage(String(errorMessage));
       } else {
@@ -130,7 +133,7 @@ export default function Page(): React.JSX.Element {
     setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     console.log('The new page number :', newPage);
     setPage(newPage);
   };

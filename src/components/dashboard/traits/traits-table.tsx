@@ -43,7 +43,7 @@ interface TraitTableProps {
   rows?: Trait[];
   rowsPerPage?: number;
   myRowsPerPageChangeEvent?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  myPageChangeEvent?: (event: unknown, newPage: number) => void; 
+  myPageChangeEvent?: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void; 
   handleClickOpen: (id: number, name: string) => void;
   handleUpdateClick: (id: number) => void;
 }
@@ -89,11 +89,11 @@ export function TraitsTable({
                 />
               </TableCell>
               <TableCell>Name</TableCell>
-              <TableCell>Is location associated</TableCell>
+              {/**  <TableCell>Is location associated</TableCell> */}
               <TableCell>Description</TableCell>
               <TableCell>Trait properties</TableCell>
               <TableCell>Type</TableCell>
-              {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
+              {(user?.levelId === USER_LEVEL_ADMIN) && (
                 <>
                   <TableCell>Update</TableCell>
                   <TableCell>Delete</TableCell>
@@ -124,14 +124,14 @@ export function TraitsTable({
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
                       <Link
                       variant="subtitle2"
-                      sx={{ cursor: 'pointer', textDecoration: 'none', color: 'black', p: 0, m: 0, background: 'none', border: 'none' }}
+                      sx={{ cursor: 'pointer', textDecoration: 'none', p: 0, m: 0, background: 'none', border: 'none' }}
                       onClick={() => router.push(paths.dashboard.traitDisplay(Number(row.id)))}
                     >
                       {row.name}
                     </Link>
                     </Stack>
                   </TableCell>
-                  <TableCell>{row.location_associated}</TableCell>
+                  {/**  <TableCell>{row.location_associated}</TableCell> */}
                   <TableCell>{row.description}</TableCell>
                   <TableCell>
                     <Chip
@@ -143,7 +143,7 @@ export function TraitsTable({
                       />
                   </TableCell>
                   <TableCell>{row.trait_type_name}</TableCell>
-                  {(user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (<>
+                  {(user?.levelId === USER_LEVEL_ADMIN) && (<>
                     <TableCell>
                       <IconButton aria-label="update"
                         onClick={() => { handleUpdateClick(Number(row.id)); }}>
@@ -171,7 +171,7 @@ export function TraitsTable({
       <TablePagination
         component="div"
         count={count}
-        onPageChange={myPageChangeEvent}
+        onPageChange={myPageChangeEvent ?? (() => {})}
         onRowsPerPageChange={myRowsPerPageChangeEvent}
         page={page}
         rowsPerPage={rowsPerPage}

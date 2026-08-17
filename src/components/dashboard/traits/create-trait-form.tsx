@@ -17,11 +17,12 @@ import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
-import Select from '@mui/material/Select';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Switch from '@mui/material/Switch';
 import MenuItem from '@mui/material/MenuItem';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
+import { AxiosError } from 'axios';
 
 import { createTraitRequest } from '@/api/traits';
 import { getTraitTypesRequest } from '@/api/traitTypes';
@@ -38,9 +39,9 @@ type Values = zod.infer<typeof schema>;
 
 export function CreateTraitForm(): React.JSX.Element {
   const router = useRouter();
-  const [listTraitTypes, setListTraitTypes] = useState([]);
+  const [listTraitTypes, setListTraitTypes] = useState<{ id: number; name: string }[]>([]);
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   const {
       control,
@@ -94,7 +95,7 @@ export function CreateTraitForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -116,8 +117,8 @@ export function CreateTraitForm(): React.JSX.Element {
   const traitTypeId = watch('trait_type_id');
 
   //Reset the is_location_associated field when the trait type is changed
-  const onChangeTraitType = (event: React.ChangeEvent<{ value: unknown }>) => {
-    const newValue = event.target.value as number;
+  const onChangeTraitType = (event: SelectChangeEvent<number>) => {
+    const newValue = Number(event.target.value);
     setValue('trait_type_id', newValue);
     setValue('is_location_associated', false);
     clearErrors('trait_type_id'); // Clear the error for the trait_type_id field
@@ -136,7 +137,7 @@ export function CreateTraitForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.trait_type_id)}>
                   <InputLabel>Trait type</InputLabel>
-                    <Select {...field} defaultValue="0" label="Trait type" onChange={onChangeTraitType} variant="outlined">
+                    <Select {...field} value={field.value ?? 0} label="Trait type" onChange={onChangeTraitType} variant="outlined">
                     <MenuItem value={0}>Select trait type</MenuItem>
                       {listTraitTypes.map((option) => (
                         <MenuItem key={option.id} value={option.id}>
@@ -148,7 +149,7 @@ export function CreateTraitForm(): React.JSX.Element {
                 </FormControl>
                 )}
             />
-            {traitTypeId === TRAIT_TYPE_ENVIRONMENT && (
+            {/*traitTypeId === TRAIT_TYPE_ENVIRONMENT && (
               <Controller
                   control={control}
                   name="is_location_associated"
@@ -162,7 +163,15 @@ export function CreateTraitForm(): React.JSX.Element {
                   </FormControl>
                   )}
               />
-            )}
+            ) 
+             //This switch is not needed anymore, 
+             // because the trait type environment is always individual associated. 
+             // The switch was used to indicate if the trait was location associated or not, 
+             // but now it is always individual associated. 
+             // The switch is kept in the code for future use, in case we want to allow 
+             // the user to create a trait type that is not individual associated.
+             // In the DB there is a table called location_property, similarly to organism_property.
+             */}
             <Controller
                 control={control}
                 name="name"
@@ -180,7 +189,7 @@ export function CreateTraitForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
-                  <OutlinedInput {...field} label="Description" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Description" type="text" multiline={true} minRows={4}/>
                   {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
                 </FormControl>
                 )}

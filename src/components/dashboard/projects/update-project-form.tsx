@@ -24,14 +24,20 @@ import MenuItem from '@mui/material/MenuItem';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
+import { AxiosError } from 'axios';
+import { useUser } from '@/hooks/use-user';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getProjectRequest, updateProjectRequest } from '@/api/projects';
-import { getPersonsRequest } from '@/api/persons';
+import { getPersonsRequest, getPersonRequest } from '@/api/persons';
+import { USER_LEVEL_ADMIN } from '@/constants';
 
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }),
   description: zod.string().min(1, { message: 'Description is required' }),
   owner_person_id: zod.number().min(1, { message: 'The person responsible for the project is required.' }),
+  must_read_title: zod.string().max(255, { message: 'Must read title is too long (max 255 characters)' }).optional(),
+  must_read_content: zod.string().max(2500, { message: 'Must read content is too long (max 2500 characters)' }).optional(),
 });
 
 type Values = zod.infer<typeof schema>;
@@ -39,7 +45,7 @@ type Values = zod.infer<typeof schema>;
 
 export function UpdateProjectForm(): React.JSX.Element {
   const router = useRouter();
-
+  const { user } = useUser();
   const {
     control,
     reset,
@@ -55,16 +61,18 @@ export function UpdateProjectForm(): React.JSX.Element {
       name: '',
       description: '',
       owner_person_id: 0,
+      must_read_title: '',
+      must_read_content: '',
     },
    });
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const [listPersons, setListPersons] = useState([]);
-  const params = useParams<{ id: int }>();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [listPersons, setListPersons] = useState<{ id: number; first_name: string; family_name: string; email: string }[]>([]);
+  const params = useParams<{ id: string }>();
   const [projectId, setProjectId] = useState(params.id);
-
+  const brandTitle = useBrandTitle();
   const isMounted = useRef(false);
   
   useEffect(() => {
@@ -77,15 +85,30 @@ export function UpdateProjectForm(): React.JSX.Element {
             if (responseProject.data && responseProject.data.length > 0) {
               reset({ name: responseProject.data[0].name, 
                       description: responseProject.data[0].description,
-                      owner_person_id: responseProject.data[0].owner_person_id, });
-              document.title = `Update Projet: ${responseProject.data[0].name} | Dashboard | ${config.site.name}`;
+                      owner_person_id: responseProject.data[0].owner_person_id, 
+                      must_read_title: responseProject.data[0].must_read_title || '',
+                      must_read_content: responseProject.data[0].must_read_content || '',
+                    });
+              document.title = `Update Projet: ${responseProject.data[0].name} | ${brandTitle}`;
             }
 
             //Fetch persons info
-            const responsePersons = await getPersonsRequest();
-            if (responsePersons.data && responsePersons.data.length > 0) {
-              setListPersons(responsePersons.data);
-            }
+            if(user?.levelId === USER_LEVEL_ADMIN) { //admin user  
+                const responsePersons = await getPersonsRequest();
+                if (responsePersons.data && responsePersons.data.length > 0) {
+                  setListPersons(responsePersons.data);
+              }
+            }else{
+                  //Fetch the person info for the group leader
+                  console.log('Fetching person info for group leader with personId:', user?.personId);
+                  const responsePerson = await getPersonRequest(user.personId);
+                  if (responsePerson.data) {
+                    setListPersons(responsePerson.data);
+                    setValue('owner_person_id', responsePerson.data[0].id);
+                  } else {
+                    console.error('No person data found for the group leader');
+                  }
+              }
           }
         } catch (error) {
           console.error('Error fetching project info:', error);
@@ -107,7 +130,7 @@ export function UpdateProjectForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -137,7 +160,8 @@ export function UpdateProjectForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.owner_person_id)}>
                   <InputLabel>Responsible person</InputLabel>
-                    <Select {...field} defaultValue="0" label="Responsible person" variant="outlined">
+                    <Select {...field} value={field.value ?? 0}
+                    onChange={e => field.onChange(Number(e.target.value))} label="Responsible person" variant="outlined">
                     <MenuItem value={0}>Select one person</MenuItem>
                       {listPersons.map((option) => (
                           <MenuItem key={option.id} value={option.id}>
@@ -166,8 +190,31 @@ export function UpdateProjectForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
-                  <OutlinedInput {...field} label="Description" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Description" type="text" multiline={true} minRows={4}/>
                   {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
+                </FormControl>
+                )}
+            />
+            <Controller
+                control={control}
+                name="must_read_title"
+                render={({ field }) => (
+                <FormControl fullWidth error={Boolean(errors.must_read_title)}>
+                  <InputLabel>Must read title</InputLabel>
+                  <OutlinedInput {...field} label="Must read title" type="text"/>
+                  {errors.must_read_title ? <FormHelperText>{errors.must_read_title.message}</FormHelperText> : null}
+                  {!errors.must_read_title ? <FormHelperText>If the title is left blank, the must read content will not be shown</FormHelperText> : null}
+                </FormControl>
+                )}
+            />
+            <Controller
+                control={control}
+                name="must_read_content"
+                render={({ field }) => (
+                <FormControl fullWidth error={Boolean(errors.must_read_content)}>
+                  <InputLabel>Must read content</InputLabel>
+                  <OutlinedInput {...field} label="Must read content" type="text" multiline={true} minRows={4}/>
+                  {errors.must_read_content ? <FormHelperText>{errors.must_read_content.message}</FormHelperText> : null}
                 </FormControl>
                 )}
             />

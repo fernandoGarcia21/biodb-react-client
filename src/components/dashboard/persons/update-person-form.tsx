@@ -24,6 +24,8 @@ import MenuItem from '@mui/material/MenuItem';
 import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
 import { config } from '@/config';
+import { AxiosError } from 'axios';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 import { getPersonRequest, updatePersonRequest } from '@/api/persons';
 
@@ -63,10 +65,10 @@ export function UpdatePersonForm(): React.JSX.Element {
 
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = React.useState(null);
-  const params = useParams<{ id: int }>();
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const params = useParams<{ id: string }>();
   const [personId, setPersonId] = useState(params.id);
-
+  const brandTitle = useBrandTitle();
   const isMounted = useRef(false);
   
   useEffect(() => {
@@ -83,7 +85,7 @@ export function UpdatePersonForm(): React.JSX.Element {
                       email: responsePerson.data[0].email ? responsePerson.data[0].email : '',
                       additional_info: responsePerson.data[0].additional_info ? responsePerson.data[0].additional_info : ''
                       , });
-              document.title = `Update Person: ${responsePerson.data[0].first_name} ${responsePerson.data[0].family_name} | Dashboard | ${config.site.name}`;
+              document.title = `Update Person: ${responsePerson.data[0].first_name} ${responsePerson.data[0].family_name} | ${brandTitle}`;
             }
           }
         } catch (error) {
@@ -106,7 +108,7 @@ export function UpdatePersonForm(): React.JSX.Element {
           setIsPending(false);
 
         }catch(error){
-          if (error instanceof Error && error.request && error.request.response) {
+          if (error instanceof AxiosError && error.request && error.request.response) {
             const errorMessage = JSON.parse(error.request.response).message;
             setError('root', { type: 'server', message: String(errorMessage) });
           } else {
@@ -180,7 +182,7 @@ export function UpdatePersonForm(): React.JSX.Element {
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.additional_info)}>
                   <InputLabel>Additional information</InputLabel>
-                  <OutlinedInput {...field} label="Additional information" type="text" multiline="true" minRows={4}/>
+                  <OutlinedInput {...field} label="Additional information" type="text" multiline={true} minRows={4}/>
                   {errors.additional_info ? <FormHelperText>{errors.additional_info.message}</FormHelperText> : null}
                 </FormControl>
                 )}

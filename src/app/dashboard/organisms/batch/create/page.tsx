@@ -5,13 +5,15 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { config } from '@/config';
 import { BatchCreateOrganismsForm } from '@/components/dashboard/upload/batch-create-organisms-form';
+import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
+  const brandTitle = useBrandTitle();
 
   //Add title to the page
   useEffect(() => {
-    document.title = `Create organisms | Dashboard | ${config.site.name}`;
-  }, []);
+    document.title = `Create organisms | ${brandTitle}`;
+  }, [brandTitle]);
 
 
   return (
