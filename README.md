@@ -156,6 +156,21 @@ underlying flexBioDB architecture can be customized for a particular
 research community while retaining a reusable and lightweight framework
 that can be adapted to other emerging model systems.
 
+## Authors and contributors
+
+**Author and project lead**
+
+-   Diego Fernando García Castillo ---
+    https://github.com/fernandoGarcia21
+
+**Contributors**
+
+-   Anja Westram
+-   Roger Butlin
+-   Rui Faria
+-   Nick Barton
+
+
 ## Acknowledgements
 
 The user interface was originally developed using the open-source
