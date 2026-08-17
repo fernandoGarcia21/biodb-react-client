@@ -1,90 +1,169 @@
-## [Devias Kit - React](https://material-kit-react.devias.io/)
+# flexBioDB React Client
 
-![license](https://img.shields.io/badge/license-MIT-blue.svg)
+The **flexBioDB React Client** is the web frontend of **flexBioDB**, an
+open-source and fully customizable database framework designed to
+support research communities working with emerging model systems in
+evolutionary biology, ecology, and related fields.
 
-[![Devias Kit - React](https://github.com/devias-io/material-kit-react/blob/main/public/assets/thumbnail.png)](https://material-kit-react.devias.io/)
+flexBioDB originated from the development of **LittorinaDB**, a database
+created to address the specific data-management needs of the
+international *Littorina* research community. The framework generalizes
+the architecture developed for LittorinaDB so that it can be configured
+and adapted to other biological study systems.
 
-> Free React Admin Dashboard made with [MUI's](https://mui.com) components, [React](https://reactjs.org) and of course [Next.js](https://github.com/vercel/next.js) to boost your app development process!
+Further details on the conception, development, architecture, and implementation
+of LittorinaDB are provided in Chapter 4 of:
 
-## Pages 
+> García Castillo, D. F. (2026). *The genomic architecture of local adaptation
+> in introduced populations*. Institute of Science and Technology Austria (ISTA).
+> https://doi.org/10.15479/AT-ISTA-20991
 
-- [Dashboard](https://material-kit-react.devias.io)
-- [Customers](https://material-kit-react.devias.io/dashboard/customers)
-- [Integrations](https://material-kit-react.devias.io/dashboard/integrations)
-- [Settings](https://material-kit-react.devias.io/dashboard/settings)
-- [Account](https://material-kit-react.devias.io/dashboard/account)
-- [Sign In](https://material-kit-react.devias.io/auth/sign-in)
-- [Sign Up](https://material-kit-react.devias.io/auth/sign-up)
-- [Reset Password](https://material-kit-react.devias.io/auth/reset-password)
+Because flexBioDB is open source and configurable, research communities
+can adapt its data structure, terminology, interface, and deployment to
+their own organisms, projects, and data-management requirements.
 
-## Free Figma Community File
+**LittorinaDB** is the inaugural and reference implementation of
+flexBioDB. It is a dedicated Model Organism Database (MOD) for the
+*Littorina* research community, with an initial focus on *Littorina
+saxatilis* and *Littorina arcana*.
 
-- [Duplicate File](https://www.figma.com/file/b3L1Np4RYiicZAOMopHNkm/Devias-Dashboard-Design-Library-Kit)
+For more information about the Littorina research community, visit the
+[Littorina Research Community
+website](https://littorina.at.biopolis.pt/).
 
-## Upgrade to PRO Version
+## Architecture
 
-We also have a pro version of this product which bundles even more pages and components if you want
-to save more time and design efforts :)
+flexBioDB follows a three-tier architecture composed of:
 
-| Free Version (this one)  | [Devias Kit Pro](https://mui.com/store/items/devias-kit-pro/)                |
-| ------------------------ | :--------------------------------------------------------------------------- |
-| **8** Pages              | **80+** Pages                                                                |
-| ✔ Custom Authentication  | ✔ Authentication with **Amplify**, **Auth0**, **Firebase** and **Supabase**  |
-| -                        | ✔ Vite Version                                                               |
-| -                        | ✔ Dark Mode Support                                                          |
-| -                        | ✔ Complete Users Flows                                                       |
-| -                        | ✔ Premium Technical Support                                                  |
+1.  **Web client** --- the user interface contained in this repository.
+2.  **REST API** --- the backend application that handles requests and
+    database operations.
+3.  **PostgreSQL database** --- the relational database used to store
+    biological data and metadata.
 
-## Quick start
+This separation allows each component to be maintained and deployed
+independently.
 
-- Clone the repo: `git clone https://github.com/devias-io/material-kit-react.git`
-- Make sure your Node.js and npm versions are up to date
-- Install dependencies: `npm install` or `yarn`
-- Start the server: `npm run dev` or `yarn dev`
-- Open browser: `http://localhost:3000`
+## Main technologies
 
-## File Structure
+The client is built primarily with:
 
-Within the download you'll find the following directories and files:
+-   Next.js
+-   React
+-   TypeScript
+-   Material UI (MUI)
+-   Axios
+-   Leaflet / React Leaflet
+-   React Hook Form
+-   Zod
 
+## Requirements
+
+To run the client locally, you need:
+
+-   Node.js
+-   npm
+-   A running instance of the flexBioDB REST API
+
+## Installation
+
+Clone the repository:
+
+``` bash
+git clone https://github.com/fernandoGarcia21/biodb-react-client.git
+cd biodb-react-client
 ```
-┌── .editorconfig
-├── .eslintrc.js
-├── .gitignore
-├── CHANGELOG.md
-├── LICENSE.md
-├── next-env.d.ts
-├── next.config.js
-├── package.json
-├── README.md
-├── tsconfig.json
-├── public
-└── src
-	├── components
-	├── contexts
-	├── hooks
-	├── lib
-	├── styles
-	├── types
-	└── app
-		├── layout.tsx
-		├── page.tsx
-		├── auth
-		└── dashboard
+
+Install the dependencies:
+
+``` bash
+npm install
 ```
 
-## Resources
+## Environment configuration
 
-- More freebies like this one: https://devias.io
+Create a local environment file from the provided example:
 
-## Reporting Issues:
+``` bash
+cp .env.example .env.local
+```
 
-- [Github Issues Page](https://github.com/devias-io/material-kit-react/issues)
+Configure the URL of the flexBioDB REST API in `.env.local`:
+
+``` env
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+For a production deployment, replace this value with the public URL of
+the corresponding REST API.
+
+Do not commit `.env.local` to the repository.
+
+## Development
+
+Start the development server:
+
+``` bash
+npm run dev
+```
+
+By default, the application runs at:
+
+``` text
+http://localhost:8080
+```
+
+The backend REST API must also be running and accessible through the URL
+configured in `NEXT_PUBLIC_API_URL`.
+
+## Production build
+
+Create an optimized production build:
+
+``` bash
+npm run build
+```
+
+Start the production server:
+
+``` bash
+npm start
+```
+
+The production application runs on port `8080` by default.
+
+## Backend
+
+The frontend requires the flexBioDB REST API:
+
+https://github.com/fernandoGarcia21/biodb-rest-api
+
+The backend provides access to the PostgreSQL database and implements
+the API used by this client.
+
+## LittorinaDB: reference implementation
+
+LittorinaDB was developed for the needs of the international *Littorina*
+research community and served as the foundation from which the more
+general flexBioDB framework emerged.
+
+LittorinaDB is designed to centralize standardized biological
+information, including phenotypic and environmental data, while linking
+database records to datasets stored in external public repositories.
+
+As the reference implementation, LittorinaDB demonstrates how the
+underlying flexBioDB architecture can be customized for a particular
+research community while retaining a reusable and lightweight framework
+that can be adapted to other emerging model systems.
+
+## Acknowledgements
+
+The user interface was originally developed using the open-source
+[Devias Kit React](https://github.com/devias-io/material-kit-react)
+dashboard template as a starting point and was subsequently adapted and
+extended for flexBioDB and LittorinaDB.
 
 ## License
 
-- Licensed under [MIT](https://github.com/devias-io/material-kit-react/blob/main/LICENSE.md)
-
-## Contact Us
-
-- Email Us: support@deviasio.zendesk.com
+This project is distributed under the MIT License. See `LICENSE.md` for
+details.
