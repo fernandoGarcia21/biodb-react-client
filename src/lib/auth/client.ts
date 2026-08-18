@@ -88,32 +88,24 @@ class AuthClient {
     return { error: 'Update reset not implemented' };
   }
 
+  
   async getUser(): Promise<{ data?: User | null; error?: string }> {
-    // Make API request
-    //Validate the token and get the user data
-    console.log('Validating token in getUser() ');
-    const cookies = Cookies.get();
-    if(cookies.jwt){
-        try{
-            console.log(cookies.jwt);
-            //Todo, bring all user information from the token
-            const res = await verifyToken(cookies.jwt);
-            if(res.data){
-                console.log('Token is valid');
-                return { data: res.data };
-            }else{
-                console.log('Token is not valid - no data in the response');
-                return { data: null };
-            }
-        }catch(error){
-            console.log('Token is not valid in catch');
-            return { data: null };
-        }
-    }else{
-        console.log('Token is not valid in validating jwt');
-        return { data: null };
+  console.log('Validating token in getUser()');
+
+  try {
+    const res = await verifyToken();
+
+    if (res.data) {
+      console.log('Token is valid');
+      return { data: res.data };
     }
+
+    return { data: null };
+  } catch (error) {
+    console.log('Token is not valid');
+    return { data: null };
   }
+}
 
   async signOut(): Promise<{ error?: string }> {
 
@@ -131,3 +123,4 @@ class AuthClient {
 }
 
 export const authClient = new AuthClient();
+
