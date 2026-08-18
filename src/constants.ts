@@ -1,10 +1,8 @@
 // This file contains all the constants that are used in the application
 
-//The URL of the backend API
-//export const API = 'https://www.littorinadb.com/api'; //PROD
-//const API = 'http://10.41.170.35:3000'; WLAN
-//const API = 'http://192.168.144.5:3000'; //PHONE
-export const API = 'http://localhost:3000';
+// Backend API URL
+export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 
 export const BATCH_TYPE_UPLOAD_ORANISMS_ID = 1;
 export const BATCH_TYPE_DELETE_ORANISMS_ID = 2;
