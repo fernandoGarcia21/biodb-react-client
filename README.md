@@ -44,6 +44,67 @@ flexBioDB follows a three-tier architecture composed of:
 This separation allows each component to be maintained and deployed
 independently.
 
+
+## Repository structure
+
+The React client repository is organized as follows:
+
+```text
+biodb-react-client/
+├── public/
+│   ├── assets/
+│   └── favicon.ico
+│
+├── src/
+│   ├── api/
+│   ├── app/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   ├── errors/
+│   │   └── legal/
+│   ├── components/
+│   │   ├── auth/
+│   │   ├── core/
+│   │   └── dashboard/
+│   ├── contexts/
+│   ├── hooks/
+│   ├── lib/
+│   ├── styles/
+│   ├── types/
+│   ├── config.ts
+│   ├── constants.ts
+│   ├── paths.ts
+│   └── protected-routes.ts
+│
+├── .env.example
+├── next.config.mjs
+├── package.json
+├── package-lock.json
+├── prettier.config.mjs
+├── tsconfig.json
+└── README.md
+```
+
+### Main directories and files
+
+- **`public/`** — contains static files served directly by the web application.
+- **`public/assets/`** — contains logos, species images, avatars, error-page graphics, and other static visual assets.
+- **`src/api/`** — contains the client-side modules used to communicate with the flexBioDB REST API.
+- **`src/app/`** — contains the Next.js application routes and page hierarchy, including authentication, dashboard, legal, and error pages.
+- **`src/components/`** — contains reusable React components organized by application area.
+- **`src/contexts/`** — contains React context providers used to share application state.
+- **`src/hooks/`** — contains reusable custom React hooks.
+- **`src/lib/`** — contains shared client-side utilities and application services.
+  The `auth/` module manages frontend authentication workflows, including
+  user sign-in, sign-out, JWT session validation, and retrieval of the
+  authenticated user's information.
+- **`src/styles/`** — contains global styles and theme configuration.
+- **`src/types/`** — contains shared TypeScript type definitions.
+- **`src/config.ts`** — contains general frontend configuration.
+- **`src/constants.ts`** — contains constants used throughout the client, including the API endpoint configuration.
+- **`src/paths.ts`** — centralizes application route paths.
+- **`src/protected-routes.ts`** — defines application routes that require authentication.
+
 ## Main technologies
 
 The client is built primarily with:
@@ -163,7 +224,7 @@ that can be adapted to other emerging model systems.
 -   Diego Fernando García Castillo ---
     https://github.com/fernandoGarcia21
 
-**Contributors**
+**Co-authors**
 
 -   Anja Westram
 -   Roger Butlin
