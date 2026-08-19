@@ -126,6 +126,16 @@ export const protectedRoutes = [
       navItemKey: '',
       requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
     },
+    {
+        path: '/dashboard/habitats/create',
+        navItemKey: '',
+        requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
+      },
+    {
+      path: '/dashboard/habitats/update/:id',
+      navItemKey: '',
+      requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
+    },
     // Add more protected routes as needed...
   ];
   

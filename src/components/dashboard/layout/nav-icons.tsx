@@ -16,6 +16,7 @@ import { CalendarCheck as ProjectIcon } from '@phosphor-icons/react/dist/ssr/Cal
 import { Link as LinkIcon } from '@phosphor-icons/react/dist/ssr/Link';
 import { FileCode as TypeDatasetIcon } from '@phosphor-icons/react/dist/ssr/FileCode';
 import { Info as InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
+import { Island as HabitatIcon } from '@phosphor-icons/react/dist/ssr/Island';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -35,4 +36,5 @@ export const navIcons = {
   trait: TraitIcon,
   'fediverse-logo': FediverseLogo,
   'info': InfoIcon,
+  habitat: HabitatIcon,
 } as Record<string, Icon>;

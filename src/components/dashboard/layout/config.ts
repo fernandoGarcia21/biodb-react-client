@@ -10,6 +10,7 @@ export const navItems = [
   { key: 'type-dataset', title: 'Types external dataset', href: paths.dashboard.typeDatasets, icon: 'dataset-logo' },
   { key: 'projects', title: 'Projects', href: paths.dashboard.projects, icon: 'project-calendar' },
   { key: 'species', title: 'Species', href: paths.dashboard.species, icon: 'fediverse-logo' },
+  { key: 'habitats', title: 'Habitats', href: paths.dashboard.habitats, icon: 'habitat' },
   { key: 'locations', title: 'Locations', href: paths.dashboard.locations, icon: 'push-pin' },
   { key: 'sampling-areas', title: 'Sampling areas', href: paths.dashboard.samplingAreas, icon: 'map-pin-area' },
   { key: 'traits', title: 'All traits', href: paths.dashboard.traits, icon: 'trait' },

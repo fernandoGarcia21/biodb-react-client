@@ -54,9 +54,13 @@ export const paths = {
     typeDatasets: '/dashboard/typedatasets',
     typeDatasetUpdate: (typeDatasetId: number | string) => `/dashboard/typedatasets/update/${typeDatasetId}`,
     typeDatasetCreate: '/dashboard/typedatasets/create',
+    habitats: '/dashboard/habitats',
+    habitatUpdate: (habitatId: number | string) => `/dashboard/habitats/update/${habitatId}`,
+    habitatCreate: '/dashboard/habitats/create',
 
     //Paths to display pages instead of update
     externalDatasetDisplay: (externalDatasetId: number | string) => `/dashboard/externaldatasets/display/${externalDatasetId}`,
+    habitatDisplay: (habitatId: number | string) => `/dashboard/habitats/display/${habitatId}`,
     locationDisplay: (locationId: number | string) => `/dashboard/location/display/${locationId}`,
     projectDisplay: (projectId: number | string) => `/dashboard/projects/display/${projectId}`,
     traitPropertiesDisplay: (propertyId: number | string) => `/dashboard/properties/display/${propertyId}`,
