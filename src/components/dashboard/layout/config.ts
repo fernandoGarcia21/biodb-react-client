@@ -3,6 +3,7 @@ import { paths } from '@/paths';
 
 export const navItems = [
   { key: 'overview', title: 'Home', href: paths.dashboard.overview, icon: 'chart-pie' },
+  { key: 'how-to-start', title: 'How to Start', href: paths.dashboard.howToStart, icon: 'start' },
   { key: 'organisms', title: 'Organisms', href: paths.dashboard.organisms(), icon: 'organism' },
   //{ key: 'customers', title: 'Customers', href: paths.dashboard.customers, icon: 'user' },
   { key: 'persons', title: 'Persons', href: paths.dashboard.persons, icon: 'user' },
@@ -20,7 +21,7 @@ export const navItems = [
   //{ key: 'integrations', title: 'Integrations', href: paths.dashboard.integrations, icon: 'plugs-connected' },
   //{ key: 'settings', title: 'Settings', href: paths.dashboard.settings, icon: 'gear-six' },
   { key: 'about-us', title: 'About Us', href: paths.dashboard.aboutUs, icon: 'info' },
-  { key: 'how-to-start', title: 'How to Start', href: paths.dashboard.howToStart, icon: 'start' },
   { key: 'account', title: 'Log in', href: paths.auth.signIn, icon: 'user' },
   //{ key: 'error', title: 'Error', href: paths.errors.notFound, icon: 'x-square' },
 ] satisfies NavItemConfig[];
+
