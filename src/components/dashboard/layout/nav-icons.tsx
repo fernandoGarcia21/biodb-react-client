@@ -17,6 +17,7 @@ import { Link as LinkIcon } from '@phosphor-icons/react/dist/ssr/Link';
 import { FileCode as TypeDatasetIcon } from '@phosphor-icons/react/dist/ssr/FileCode';
 import { Info as InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
 import { Island as HabitatIcon } from '@phosphor-icons/react/dist/ssr/Island';
+import { RocketLaunch as StartIcon } from '@phosphor-icons/react/dist/ssr/RocketLaunch';
 
 export const navIcons = {
   'chart-pie': ChartPieIcon,
@@ -37,4 +38,5 @@ export const navIcons = {
   'fediverse-logo': FediverseLogo,
   'info': InfoIcon,
   habitat: HabitatIcon,
+  start: StartIcon,
 } as Record<string, Icon>;

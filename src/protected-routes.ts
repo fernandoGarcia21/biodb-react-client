@@ -136,6 +136,11 @@ export const protectedRoutes = [
       navItemKey: '',
       requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
     },
+    {
+      path: '/dashboard/howtostart',
+      navItemKey: 'how-to-start',
+      requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
+    },
     // Add more protected routes as needed...
   ];
   
