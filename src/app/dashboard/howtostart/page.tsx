@@ -498,6 +498,388 @@ snail@REMOTE_IP_ADDRESS:/home/remote/littorina_database/permanent_files`}
 
       </Paper>
 
+          {/* ============================================================= */}
+      {/* PHASE 3                                                       */}
+      {/* ============================================================= */}
+
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 3 },
+          borderRadius: 2,
+        }}
+      >
+        <Stack spacing={3}>
+
+          {/* Phase title */}
+
+          <Stack direction="row" spacing={2} alignItems="flex-start">
+
+            <Box
+              sx={{
+                minWidth: 42,
+                height: 42,
+                borderRadius: 1.5,
+                bgcolor: 'warning.main',
+                color: 'warning.contrastText',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+              }}
+            >
+              3
+            </Box>
+
+            <Stack spacing={0.5}>
+
+              <Typography variant="h5">
+                Review and process batch submissions
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Uploaded batch files must be reviewed by an administrator
+                or curator before the system applies the requested changes
+                to the database.
+              </Typography>
+
+            </Stack>
+
+          </Stack>
+
+
+          {/* Submitted status */}
+
+          <Alert severity="info">
+
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 700, mb: 0.5 }}
+            >
+              After submitting a batch
+            </Typography>
+
+            <Typography variant="body2">
+              New batch processes initially appear with the{' '}
+              <strong>Submitted</strong> status. Administrators and Group
+              Leaders can monitor their batch processes from the Batch
+              processes page. The batch will remain pending until it is
+              reviewed by an administrator or curator.
+            </Typography>
+
+          </Alert>
+
+
+          {/* Batch processes button */}
+
+          <Box>
+            <Button
+              variant="outlined"
+              href="/dashboard/batch"
+              endIcon={<ArrowForwardIcon />}
+            >
+              Go to Batch Processes
+            </Button>
+          </Box>
+
+
+          {/* Admin curation workflow */}
+
+          <Box
+            sx={{
+              p: 2.5,
+              bgcolor: 'background.default',
+              borderRadius: 2,
+              border: 1,
+              borderColor: 'divider',
+            }}
+          >
+
+            <Stack spacing={2.5}>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                flexWrap="wrap"
+                useFlexGap
+              >
+
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 700 }}
+                >
+                  Batch curation workflow
+                </Typography>
+
+                <Chip
+                  label="ADMIN / CURATOR"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+
+              </Stack>
+
+
+              {/* Step 3.1 */}
+
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+
+                <Box
+                  sx={{
+                    minWidth: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  3.1
+                </Box>
+
+                <Stack spacing={0.5}>
+
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Open the submitted batch
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    On the Batch processes page, locate a process with
+                    <strong> Submitted</strong> status and click the{' '}
+                    <strong>Review</strong> button.
+                  </Typography>
+
+                </Stack>
+
+              </Stack>
+
+
+              {/* Step 3.2 */}
+
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+
+                <Box
+                  sx={{
+                    minWidth: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  3.2
+                </Box>
+
+                <Stack spacing={0.5}>
+
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Inspect the uploaded file
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    Download the original file using the{' '}
+                    <strong>Download</strong> button and verify that the
+                    data are correct, consistently formatted, and properly
+                    standardized.
+                  </Typography>
+
+                </Stack>
+
+              </Stack>
+
+
+              {/* Step 3.3 */}
+
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+
+                <Box
+                  sx={{
+                    minWidth: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  3.3
+                </Box>
+
+                <Stack spacing={1} sx={{ flex: 1 }}>
+
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Approve or reject the batch
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    After reviewing the file, choose the appropriate
+                    curation outcome:
+                  </Typography>
+
+
+                  <Grid container spacing={2}>
+
+                    <Grid item xs={12} md={6}>
+
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          borderColor: 'success.main',
+                        }}
+                      >
+
+                        <Stack spacing={1}>
+
+                          <Chip
+                            label="APPROVE"
+                            color="success"
+                            size="small"
+                            sx={{ alignSelf: 'flex-start' }}
+                          />
+
+                          <Typography variant="body2">
+                            Approve the batch when the uploaded file and
+                            its data are correct and properly standardized.
+                            The system will then process the requested
+                            database changes.
+                          </Typography>
+
+                        </Stack>
+
+                      </Paper>
+
+                    </Grid>
+
+
+                    <Grid item xs={12} md={6}>
+
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          height: '100%',
+                          borderColor: 'error.main',
+                        }}
+                      >
+
+                        <Stack spacing={1}>
+
+                          <Chip
+                            label="REJECT"
+                            color="error"
+                            size="small"
+                            sx={{ alignSelf: 'flex-start' }}
+                          />
+
+                          <Typography variant="body2">
+                            Reject the batch if you identify errors,
+                            inconsistencies, or data that require correction
+                            before they can be processed.
+                          </Typography>
+
+                        </Stack>
+
+                      </Paper>
+
+                    </Grid>
+
+                  </Grid>
+
+
+                  <Typography variant="body2" color="text.secondary">
+                    In either case, the curator can document the decision
+                    in the <strong>Results of curation</strong> field.
+                  </Typography>
+
+                </Stack>
+
+              </Stack>
+
+
+              {/* Step 3.4 */}
+
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+
+                <Box
+                  sx={{
+                    minWidth: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  3.4
+                </Box>
+
+                <Stack spacing={0.5}>
+
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Wait for batch processing
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    Once approved, the system automatically processes the
+                    batch and applies the corresponding changes to the
+                    database. A successfully executed process will appear
+                    with the <strong>Completed</strong> status.
+                  </Typography>
+
+                </Stack>
+
+              </Stack>
+
+            </Stack>
+
+          </Box>
+
+
+          {/* Materialized views */}
+
+          <Alert severity="warning">
+
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 700, mb: 0.5 }}
+            >
+              Making processed data available
+            </Typography>
+
+            <Typography variant="body2">
+              Materialized views are refreshed automatically once a day at
+              <strong> 2:00 AM</strong>. If the newly processed data should
+              become available immediately, an administrator can use the{' '}
+              <strong>Refresh materialized views</strong> button on the
+              Batch processes page.
+            </Typography>
+
+          </Alert>
+
+        </Stack>
+
+      </Paper>
 
       {/* ============================================================= */}
       {/* RECOMMENDED ORDER                                             */}
