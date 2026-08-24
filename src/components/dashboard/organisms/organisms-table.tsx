@@ -21,6 +21,7 @@ export interface Organism {
   id: string;
   individual_id: string;
   species_name: string;
+  habitat_name: string;
   sampling_site_name: string;
   location_name: string;
   country_name: string;
@@ -108,6 +109,7 @@ export function OrganismsTable({
               </TableCell>
               <TableCell>Internal Id</TableCell>
               <TableCell>Species</TableCell>
+              <TableCell>Habitat</TableCell>
               <TableCell>Sampling area</TableCell>
               <TableCell>Sampling location</TableCell>
               <TableCell>Country</TableCell>
@@ -147,6 +149,7 @@ export function OrganismsTable({
                     </Stack>
                   </TableCell>
                   <TableCell>{row.species_name}</TableCell>
+                  <TableCell>{row.habitat_name}</TableCell>
                   <TableCell>{row.sampling_site_name}</TableCell>
                   <TableCell>{row.location_name}</TableCell>
                   <TableCell>{row.country_name}</TableCell>
@@ -190,3 +193,4 @@ export function OrganismsTable({
     </Card>
   );
 }
+
