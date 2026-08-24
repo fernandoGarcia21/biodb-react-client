@@ -237,18 +237,19 @@ export default function Page(): React.JSX.Element {
       router.push(paths.dashboard.organismsBatchCreate);
     };
 
-    const handleExportClick = async() => {
+    const handleExportClick = async(format: 'tsv' | 'csv') => {
       if (!filtersQuery || !filtersQuery.length) {
         setOpenNoFiltersDialog(true);
         return;
       }
       try{
-        const response = await getExportFilteredOrganismsRequest(filtersQuery);
+        const tmpNewFiltersQuery = filtersQuery + `&formatExport=${format}`;
+        const response = await getExportFilteredOrganismsRequest(tmpNewFiltersQuery);
         if (response.statusText !== 'OK') {
           throw new Error('Network response was not ok');
         }
         if(response.data){
-          FileDownload(response.data, 'organisms.tsv');
+          FileDownload(response.data, `organisms.${format}`);
         }
       } catch (error) {
           console.error('Error filtering organisms:', error);
@@ -400,9 +401,15 @@ export default function Page(): React.JSX.Element {
               </Button>
               <Button 
               color="inherit" 
-              onClick={handleExportClick}
+              onClick={() => handleExportClick('tsv')}
               startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
-                Export
+                Export TSV
+              </Button>
+              <Button 
+              color="inherit" 
+              onClick={() => handleExportClick('csv')}
+              startIcon={<DownloadIcon fontSize="var(--icon-fontSize-md)" />}>
+                Export CSV
               </Button>
               <Button 
               color="inherit" 
