@@ -52,6 +52,7 @@ export default function Page(): React.JSX.Element {
   const [totalAllowed, setTotalAllowed] = useState(0);
   const [openMustReadDialog, setOpenMustReadDialog] = useState(false);
   const [mustReadProjects, setMustReadProjects] = useState<Array<{ id: number; name: string; must_read_title: string; must_read_content: string }>>([]);
+  const [openNoFiltersDialog, setOpenNoFiltersDialog] = useState(false);
   const isMounted = useRef(false);
 
   useEffect(() => {
@@ -237,16 +238,17 @@ export default function Page(): React.JSX.Element {
     };
 
     const handleExportClick = async() => {
+      if (!filtersQuery || !filtersQuery.length) {
+        setOpenNoFiltersDialog(true);
+        return;
+      }
       try{
-        if(filtersQuery && filtersQuery.length) {
-          const response = await getExportFilteredOrganismsRequest(filtersQuery);
-          if (response.statusText !== 'OK') {
-            throw new Error('Network response was not ok');
-          }
-          if(response.data){
-            FileDownload(response.data, 'organisms.tsv');
-          }
-          
+        const response = await getExportFilteredOrganismsRequest(filtersQuery);
+        if (response.statusText !== 'OK') {
+          throw new Error('Network response was not ok');
+        }
+        if(response.data){
+          FileDownload(response.data, 'organisms.tsv');
         }
       } catch (error) {
           console.error('Error filtering organisms:', error);
@@ -494,6 +496,29 @@ export default function Page(): React.JSX.Element {
             </Button>
           </DialogActions>
         </Dialog>
+        <Dialog
+          open={openNoFiltersDialog}
+          onClose={() => setOpenNoFiltersDialog(false)}
+          aria-labelledby="no-filters-dialog-title"
+        >
+          <DialogTitle id="no-filters-dialog-title">
+            No Filters Applied
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Please refine your search using the filters above before exporting, so that a valid dataset can be generated.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setOpenNoFiltersDialog(false)}
+              variant="contained"
+              color="primary"
+            >
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
   );
 }
@@ -516,4 +541,5 @@ function getDynamicProperties(rows: Organism[]): string[] {
     )
   ).filter(h => h != null);
 }
+
 
