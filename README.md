@@ -424,6 +424,16 @@ https://github.com/fernandoGarcia21/biodb-rest-api
 The backend provides access to the PostgreSQL database and implements
 the API used by this client.
 
+## Production deployment
+
+The frontend is deployed as part of the complete flexBioDB production stack.
+
+For the full VPS deployment procedure, including PostgreSQL, the REST API,
+the Next.js production build, PM2, Nginx, HTTPS, environment variables,
+persistent files, and search-engine configuration, see:
+
+ -   **[VPS Production Deployment Guide](https://github.com/fernandoGarcia21/biodb-rest-api/blob/master/DEPLOYMENT.md)**
+
 ## LittorinaDB: reference implementation
 
 LittorinaDB was developed for the needs of the international *Littorina*
