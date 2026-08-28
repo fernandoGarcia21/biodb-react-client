@@ -219,6 +219,14 @@ export function UpdateSpeciesForm(): React.JSX.Element {
                   <InputLabel>Internal Code</InputLabel>
                   <OutlinedInput {...field} label="Internal Code" type="text"/>
                   {errors.internal_code ? <FormHelperText>{errors.internal_code.message}</FormHelperText> : null}
+                  <FormHelperText>
+                   The <strong>Internal Code</strong> is the a two-letter code
+                    assigned by the administrator. Use this
+                    code to associate an organism with a species during organism batch processing.
+                    In the CSV template column <strong>SPECIES</strong>, only one species code
+                    can be associated with an individual and this is <strong>required </strong>
+                    at the time of organism creation.
+                  </FormHelperText>
                 </FormControl>
                 )}
             />

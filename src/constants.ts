@@ -3,7 +3,6 @@
 // Backend API URL
 export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-
 export const BATCH_TYPE_UPLOAD_ORANISMS_ID = 1;
 export const BATCH_TYPE_DELETE_ORANISMS_ID = 2;
 export const TRAIT_TYPE_ENVIRONMENT = 3;
@@ -76,3 +75,4 @@ export const BACKEND_ENDPOINT_URL_IMAGES = `${API}/images/`;
 
 export const SETTINGS_DB_NAME = 'DB_NAME';
 export const SETTINGS_DB_NAME_SUFFIX = 'DB_NAME_SUFFIX';
+export const SETTINGS_DB_WELCOME_MESSAGE = 'DB_WELCOME_MESSAGE';

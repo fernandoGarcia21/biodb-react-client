@@ -53,6 +53,7 @@ export default function Page(): React.JSX.Element {
   const [openMustReadDialog, setOpenMustReadDialog] = useState(false);
   const [mustReadProjects, setMustReadProjects] = useState<Array<{ id: number; name: string; must_read_title: string; must_read_content: string }>>([]);
   const [openNoFiltersDialog, setOpenNoFiltersDialog] = useState(false);
+  const [noOrganismsFound, setNoOrganismsFound] = useState(false);
   const isMounted = useRef(false);
 
   useEffect(() => {
@@ -90,37 +91,37 @@ export default function Page(): React.JSX.Element {
           //Fetch the data for the filters
           const responseSpecies = await getSpeciesRequest();
           setListSpecies(responseSpecies.data);
-          console.log('Species list:', responseSpecies.data);
+          //console.log('Species list:', responseSpecies.data);
 
           const responseHabitats = await getAllHabitatsRequest();
           setListHabitats(responseHabitats.data);
-          console.log('Habitats list:', responseHabitats.data);
+          //console.log('Habitats list:', responseHabitats.data);
 
           const responseSamplingAreas = await getAllSamplingAreasLocationsRequest();
           setListSamplingAreas(responseSamplingAreas.data);
-          console.log('Locations list:', responseSamplingAreas.data);
+          //console.log('Locations list:', responseSamplingAreas.data);
 
           //Identify and sort the unique values of location from sampling areas
           const tmpLocations: string[] = responseSamplingAreas.data.map((samplingArea: { location_name: string }) => samplingArea.location_name);
           const uniqueLocations: string[] = Array.from(new Set<string>(tmpLocations)).sort((a, b) => a.localeCompare(b));
           setListLocations(uniqueLocations);
-          console.log('Unique location names:', uniqueLocations);
+          //console.log('Unique location names:', uniqueLocations);
 
           const responseProjects = await getProjectsRequest();
           setListProjects(responseProjects.data);
-          console.log('Projects list:', responseProjects.data);
+          //console.log('Projects list:', responseProjects.data);
 
           const responseTraitProperties = await getAllTraitPropertiesNoLocation();
           const groupedTraitProperties = groupPropertiesByTrait(responseTraitProperties.data);
           setListTraitProperties(groupedTraitProperties);
           setListPropertiesNoGroupped(responseTraitProperties.data);
-          console.log('Trait properties list:', groupedTraitProperties);
+          //console.log('Trait properties list:', groupedTraitProperties);
 
           //Identify and sort the unique values of trait type
           const tmpTraitTypes = groupedTraitProperties.map((trait) => trait.trait_type_name);
           const uniqueTraitTypes = Array.from(new Set(tmpTraitTypes)).sort((a, b) => a.localeCompare(b));
           setListTraitTypes(uniqueTraitTypes);
-          console.log('Unique trait types:', uniqueTraitTypes);
+          //console.log('Unique trait types:', uniqueTraitTypes);
         }
       } catch (error) {
         console.error('Error fetching organisms:', error);
@@ -211,13 +212,13 @@ export default function Page(): React.JSX.Element {
 
   //Define the event handlers for the pagination
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Rows per page from organisms page :', event.target.value);
+    //console.log('Rows per page from organisms page :', event.target.value);
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
   const handleChangePage = (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
-    console.log('The new page number :', newPage);
+    //console.log('The new page number :', newPage);
     setPage(newPage);
   };
 
@@ -289,56 +290,70 @@ export default function Page(): React.JSX.Element {
           filterPropertiesOutput: selectedOutputProperties.join(','),
         };
     const tmpFltersQuery = new URLSearchParams(filtersOject).toString();
-    console.log('Filters query string:', tmpFltersQuery);
+    //console.log('Filters query string:', tmpFltersQuery);
 
 
 
     try{
       const responseFilter = await getFilteredOrganismsRequest(tmpFltersQuery);
 
-      console.log('Organisms filtered response:', responseFilter.data);
+      //console.log('Organisms filtered response:', responseFilter.data);
 
       // Extract organisms and totalCount from the new response format
       const filteredOrganisms = responseFilter.data.organisms || responseFilter.data;
       const totalFilteredCount = responseFilter.data.totalCount || filteredOrganisms.length;
       
-      setTotalCount(totalFilteredCount);
-      setTotalAllowed(responseFilter.data.totalAllowed || 0);
+      //Check if there are any filtered organisms returned from the API
+      if(filteredOrganisms && filteredOrganisms.length > 0){
+        //There are filtered organisms, proceed with updating the state and handling must read properties
+        setNoOrganismsFound(false);
+        setTotalCount(totalFilteredCount);
+        setTotalAllowed(responseFilter.data.totalAllowed || 0);
 
-      let propertiesMustRead = listPropertiesNoGroupped.filter((property) => {
-        //Check if the property is in the selected output properties
-        return selectedOutputProperties.includes(property.property_id) && property.req_project_must_read;
-      });
-
-      console.log('Properties that require must read:', propertiesMustRead);
-
-      if(propertiesMustRead && propertiesMustRead.length > 0){
-        //Get the list of unique project Ids from the organisms
-        let projectIdsSet = new Set<string>();
-        filteredOrganisms.forEach((organism: Organism) => {
-          if(organism.project_ids){
-            projectIdsSet.add(organism.project_ids);
-          }
+        let propertiesMustRead = listPropertiesNoGroupped.filter((property) => {
+          //Check if the property is in the selected output properties
+          return selectedOutputProperties.includes(property.property_id) && property.req_project_must_read;
         });
-        const projectIdsArray = Array.from(projectIdsSet);
-        console.log('Project Ids from filtered organisms:', projectIdsArray.join(','));
 
-        //Fetch the must read info for the projects
-        const responseProjectsMustRead = await getProjectsMustReadRequest(projectIdsArray.join(','));
-        console.log('Projects must read response:', responseProjectsMustRead.data);
-        const projectsMustReadMap = new Map<number, { name: string; must_read_title: string; must_read_content: string }>();
-        responseProjectsMustRead.data.forEach((project: { id: number; name: string; must_read_title: string; must_read_content: string }) => {
-          projectsMustReadMap.set(project.id, { name: project.name, must_read_title: project.must_read_title, must_read_content: project.must_read_content });
-        });
-        
-        // If there are projects with must-read info, open the dialog
-        if (projectsMustReadMap.size > 0) {
-          setMustReadProjects(Array.from(projectsMustReadMap.values()).map((value, index) => ({
-            id: Array.from(projectsMustReadMap.keys())[index],
-            ...value
-          })));
-          setOpenMustReadDialog(true);
-        }
+        console.log('Properties that require must read:', propertiesMustRead);
+
+        if(propertiesMustRead && propertiesMustRead.length > 0){
+          //There are properties that require must read, fetch the relevant project info
+          //Get the list of unique project Ids from the organisms
+          let projectIdsSet = new Set<string>();
+          filteredOrganisms.forEach((organism: Organism) => {
+            if(organism.project_ids){
+              projectIdsSet.add(organism.project_ids);
+            }
+          });
+          const projectIdsArray = Array.from(projectIdsSet);
+          //console.log('Project Ids from filtered organisms:', projectIdsArray.join(','));
+
+          if(projectIdsArray.length > 0){
+            //There are project IDs, fetch the must read info for the projects
+            const responseProjectsMustRead = await getProjectsMustReadRequest(projectIdsArray.join(','));
+            ///console.log('Projects must read response:', responseProjectsMustRead.data);
+            const projectsMustReadMap = new Map<number, { name: string; must_read_title: string; must_read_content: string }>();
+            responseProjectsMustRead.data.forEach((project: { id: number; name: string; must_read_title: string; must_read_content: string }) => {
+              projectsMustReadMap.set(project.id, { name: project.name, must_read_title: project.must_read_title, must_read_content: project.must_read_content });
+            });
+            
+            // If there are projects with must-read info, open the dialog
+            if (projectsMustReadMap.size > 0) {
+              setMustReadProjects(Array.from(projectsMustReadMap.values()).map((value, index) => ({
+                id: Array.from(projectsMustReadMap.keys())[index],
+                ...value
+              })));
+              setOpenMustReadDialog(true);
+            }
+          }// End of if(projectIdsArray.length > 0)
+          
+        }//End of if there are properties that require must read in the selected output variables
+      }else{
+        //There are no organisms returned from the API
+        setNoOrganismsFound(true);
+        setTotalCount(0);
+        setTotalAllowed(responseFilter.data.totalAllowed || 0);
       }
 
       setOrganisms(filteredOrganisms);
@@ -346,7 +361,7 @@ export default function Page(): React.JSX.Element {
 
       //Update the headers of the table based on the output properties
       const tmpOutputHeaders = listPropertiesNoGroupped.filter((property) => selectedOutputProperties.includes(property.property_id));
-      console.log('Output headers based on selected properties:', tmpOutputHeaders);
+      //console.log('Output headers based on selected properties:', tmpOutputHeaders);
       if(tmpOutputHeaders && tmpOutputHeaders.length > 0){
         //Update the headers for the groupping of the properties by trait
         const tmpOutputHeadersGroupping = groupAndCount(tmpOutputHeaders, 'trait_name');
@@ -355,7 +370,7 @@ export default function Page(): React.JSX.Element {
         setHeadersGroupping([]);
       }
 
-      console.log('Organisms filtered:', responseFilter.data);
+      //console.log('Organisms filtered:', responseFilter.data);
 
     } catch (error) {
         console.error('Error filtering organisms:', error);
@@ -397,7 +412,7 @@ export default function Page(): React.JSX.Element {
                 onClick={handleImportClick}
                 startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}
               >
-                Import
+                Import (Create or Update)
               </Button>
               <Button 
               color="inherit" 
@@ -433,11 +448,17 @@ export default function Page(): React.JSX.Element {
           initialSamplingAreaId={initialSamplingAreaId || undefined}
           initialLocationId={initialLocationId || undefined}
           handleFilterClick = {handleFilterClick}/>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Showing {organisms.length} individual{organisms.length !== 1 ? 's' : ''} in the table
-          {totalCount > organisms.length && ` (${totalCount} total individuals found, limited to first ${organisms.length})`}. 
-          Use the filters above to refine your query and display additional individuals. If you need to access more than {totalAllowed} individuals, consider exporting the full dataset.
-        </Alert>
+        {noOrganismsFound ? (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            No organisms were found with the applied filters. Please adjust your filters and try again.
+          </Alert>
+        ) : (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Showing {organisms.length} individual{organisms.length !== 1 ? 's' : ''} in the table
+            {totalCount > organisms.length && ` (${totalCount} total individuals found, limited to first ${organisms.length})`}. 
+            Use the filters above to refine your query and display additional individuals. If you need to access more than {totalAllowed} individuals, consider exporting the full dataset.
+          </Alert>
+        )}
         <OrganismsTable
           count={organisms.length}
           page={page}

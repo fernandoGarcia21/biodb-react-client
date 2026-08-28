@@ -30,6 +30,7 @@ import { useUser } from '@/hooks/use-user';
 
 export interface Project {
   id: string;
+  internal_id: string;
   name: string;
   description: string;
   owner_person_id: string;
@@ -175,6 +176,7 @@ export function ProjectsTable({
                 />
               </TableCell>
               <TableCell>Id</TableCell>
+              <TableCell>Internal ID</TableCell>
               <TableCell>Name</TableCell>
               <TableCell sx={{ minWidth: 360, width: '35%' }}>Description</TableCell>
               <TableCell>Responsible person</TableCell>
@@ -208,6 +210,7 @@ export function ProjectsTable({
                     />
                   </TableCell>
                   <TableCell>{row.id}</TableCell>
+                  <TableCell>{row.internal_id}</TableCell>
                   <TableCell>
                     <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
                       <Link

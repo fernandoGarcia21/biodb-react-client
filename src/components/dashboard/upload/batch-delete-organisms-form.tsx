@@ -275,6 +275,13 @@ export function BatchDeleteOrganismsForm(): React.JSX.Element {
                 </FormControl>
                 )}
             />
+            <Alert severity="warning">
+              If this switch is turned on, the entire information of the
+              organisms with the IDs provided in the CSV template will be
+              deleted. If only a set of property values are to be deleted
+              for the given list of organism IDs, turn the switch off and
+              select the properties to be deleted from the component below.
+            </Alert>
             <Controller
               control={control}
               name="list_delete_properties"

@@ -82,7 +82,7 @@ export function OrganismsTable({
           <TableHead>
             <TableRow>
               <TableCell align="center" colSpan={1}></TableCell>
-              <TableCell align="center" colSpan={6}></TableCell>
+              <TableCell align="center" colSpan={7}></TableCell>
               {/* Add group of headers for dynamic properties */}
               {headersGroupping.length > 0 && headersGroupping.map((group) => (
                 <TableCell 

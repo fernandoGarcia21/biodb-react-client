@@ -14,6 +14,7 @@ import { z as zod } from 'zod';
 import { config } from '@/config';
 import { Typography } from '@mui/material';
 import { useBrandTitle } from '@/hooks/use-brand-title';
+import { FormHelperText } from '@mui/material';
 
 import { getSamplingAreaRequest } from '@/api/samplingAreas';
 
@@ -103,6 +104,21 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
         <Divider />
         <CardContent>
           <Stack spacing={1} sx={{ maxWidth: 'sm' }}>
+
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>
+            Id
+          </Typography>
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>
+            {samplingAreaId}
+          </Typography>
+          <FormHelperText>
+              The <strong>Id</strong> is the consecutive number assigned automatically 
+              by the system when a sampling area is created. Use this
+            number to associate an organism with a sampling area during organism batch processing.
+            In the CSV template column <strong>SAMPLING AREA</strong>, only one sampling area
+            identifier can be associated with an individual and this is <strong>required </strong>
+            at the time of organism creation.
+            </FormHelperText>
 
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Name</Typography>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('name')}</Typography>

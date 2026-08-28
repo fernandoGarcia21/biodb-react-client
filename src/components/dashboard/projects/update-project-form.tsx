@@ -33,6 +33,7 @@ import { getPersonsRequest, getPersonRequest } from '@/api/persons';
 import { USER_LEVEL_ADMIN } from '@/constants';
 
 const schema = zod.object({
+  internal_id: zod.string().min(2, { message: 'Internal ID is required and must be at least 2 characters long' }).max(20, { message: 'Internal ID is too long (max 20 characters)' }),
   name: zod.string().min(1, { message: 'Name is required' }),
   description: zod.string().min(1, { message: 'Description is required' }),
   owner_person_id: zod.number().min(1, { message: 'The person responsible for the project is required.' }),
@@ -58,6 +59,7 @@ export function UpdateProjectForm(): React.JSX.Element {
     formState: { errors, isSubmitSuccessful },
   } = useForm<Values>({ resolver: zodResolver(schema),
     defaultValues: {
+      internal_id: '',
       name: '',
       description: '',
       owner_person_id: 0,
@@ -83,7 +85,8 @@ export function UpdateProjectForm(): React.JSX.Element {
             //fetch project info
             const responseProject = await getProjectRequest(projectId);
             if (responseProject.data && responseProject.data.length > 0) {
-              reset({ name: responseProject.data[0].name, 
+              reset({ internal_id: responseProject.data[0].internal_id || '',
+                      name: responseProject.data[0].name, 
                       description: responseProject.data[0].description,
                       owner_person_id: responseProject.data[0].owner_person_id, 
                       must_read_title: responseProject.data[0].must_read_title || '',
@@ -170,6 +173,25 @@ export function UpdateProjectForm(): React.JSX.Element {
                         ))}
                     </Select>
                   {errors.owner_person_id ? <FormHelperText>{errors.owner_person_id.message}</FormHelperText> : null}
+                </FormControl>
+                )}
+            />
+            <Controller
+                control={control}
+                name="internal_id"
+                render={({ field }) => (
+                <FormControl fullWidth error={Boolean(errors.internal_id)}>
+                  <InputLabel>Internal ID</InputLabel>
+                  <OutlinedInput {...field} label="Internal ID" type="text"/>
+                  {errors.internal_id ? <FormHelperText>{errors.internal_id.message}</FormHelperText> : null}
+                   <FormHelperText>
+                      The <strong>Internal ID</strong> is an alphanumeric identifier assigned by
+                      researchers to distinguish a specific project within the research community
+                      (e.g. <strong>NERCSWtran</strong>). This identifier must be used as a prefix
+                      for the standardized organism identifier (<strong>ORGANISM ID</strong> column
+                      in the CSV template), following the format{' '}
+                      <strong>ProjectInternalIDSnailID_otherRelevantInfoIfNeeded</strong>.
+                    </FormHelperText>
                 </FormControl>
                 )}
             />

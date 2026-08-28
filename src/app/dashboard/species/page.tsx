@@ -152,6 +152,16 @@ export default function Page(): React.JSX.Element {
             )}
         </Stack>
         {/**<SpeciesFilters />  */}
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <p>
+            The <strong>Internal Code</strong> column in the table below is the two-letter code
+            assigned by the administrator when a species is created. Use this
+            code to associate an organism with a species during organism batch processing.
+            In the CSV template column <strong>SPECIES</strong>, only one species code
+            can be associated with an individual and this is <strong>required </strong>
+            at the time of organism creation.
+          </p>
+        </Alert>
         <SpeciesTable
           count={species.length}
           page={page}

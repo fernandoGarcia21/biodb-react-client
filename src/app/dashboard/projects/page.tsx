@@ -187,6 +187,25 @@ export default function Page(): React.JSX.Element {
           )}
         </Stack>
         {/**<ProjectsFilters /> */}
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <p>
+            The <strong>Id</strong> column in the table below is the consecutive number
+            assigned automatically by the system when a project is created. Use this
+            number to associate organisms with projects during organism batch processing.
+            In the CSV template column <strong>PROJECTS</strong>, one or more numeric
+            project identifiers can be associated with an individual. If more than one
+            project is specified, the identifiers must be separated by a semicolon (;).
+          </p>
+
+          <p>
+            The <strong>Internal ID</strong> is an alphanumeric identifier assigned by
+            researchers to distinguish a specific project within the research community
+            (e.g. <strong>NERCSWtran</strong>). This identifier must be used as a prefix
+            for the standardized organism identifier (<strong>ORGANISM ID</strong> column
+            in the CSV template), following the format{' '}
+            <strong>ProjectInternalIDSnailID_otherRelevantInfoIfNeeded</strong>.
+          </p>
+        </Alert>
         <ProjectsTable
           count={projects.length}
           page={page}

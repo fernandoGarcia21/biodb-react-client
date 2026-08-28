@@ -5,6 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { config } from '@/config';
 import { BatchDeleteOrganismsForm } from '@/components/dashboard/upload/batch-delete-organisms-form';
+import { CsvTemplateStructure } from '@/components/dashboard/upload/csv-template-structure';
 import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
@@ -20,6 +21,11 @@ export default function Page(): React.JSX.Element {
         <div>
           <Typography variant="h4">Delete organisms</Typography>
         </div>
+
+        {/* CSV template structure */}
+
+        <CsvTemplateStructure />
+
         <BatchDeleteOrganismsForm />
       </Stack>
   );
