@@ -155,6 +155,11 @@ export default function Page(): React.JSX.Element {
           )}
         </Stack>
         {/**<LocationsFilters />  */}
+		<Alert severity="info" sx={{ mb: 2 }}>
+          <p>
+            <strong>Location</strong> is as a broad geographic region belonging to a country that aggregates one or more <strong>sampling areas</strong>.
+          </p>
+        </Alert>
         <LocationsTable
           count={locations.length}
           page={page}

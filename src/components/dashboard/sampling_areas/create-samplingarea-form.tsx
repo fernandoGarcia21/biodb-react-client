@@ -273,7 +273,21 @@ export function CreateSamplingAreaForm(): React.JSX.Element {
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
                   <OutlinedInput {...field} label="Description" type="text" multiline={true} minRows={4}/>
-                  {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
+                  {errors.description ? (<FormHelperText>{errors.description.message}</FormHelperText>) : (
+                  <FormHelperText>
+                      Use the description to specify the surveying method used for the sampling area:
+                      <br />
+                      <strong>1. High-precision instrument-based sampling:</strong> When using GPS or a
+                      total station, record the instrument positioning and backsight reference
+                      orientations. This information applies to the sampling area as a whole rather
+                      than to individual organisms. A total station is a surveying instrument used
+                      to precisely measure angles and distances and determine the relative positions
+                      of sampling points.
+                      <br />
+                      <strong>2. Sampling without high-precision instruments:</strong> Describe the
+                      sampling site, total sampling area, and tidal height on the shore.
+                    </FormHelperText>
+                  )}
                 </FormControl>
                 )}
             />

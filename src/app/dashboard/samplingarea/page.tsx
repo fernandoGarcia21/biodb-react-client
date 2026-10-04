@@ -157,7 +157,9 @@ export default function Page(): React.JSX.Element {
         {/**<SamplingAreasFilters /> */}
         <Alert severity="info" sx={{ mb: 2 }}>
           <p>
-            The <strong>Id</strong> column in the table below is the consecutive number
+            <strong>Sampling area</strong> is the finest geographical unit and represents 
+            a shore segment delimited by precise geospatial boundaries.
+			The <strong>Id</strong> column in the table below is the consecutive number
             assigned automatically by the system when a sampling area is created. Use this
             number to associate an organism with a sampling area during organism batch processing.
             In the CSV template column <strong>SAMPLING AREA</strong>, only one sampling area
