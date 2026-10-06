@@ -29,7 +29,7 @@ interface SetupStep {
   number: string;
   title: string;
   description: string;
-  access: 'ADMIN ONLY' | 'ADMIN + GROUP LEADER';
+  access: 'ADMIN ONLY' | 'ADMIN + DATA CONTRIBUTOR';
   optional?: boolean;
 }
 
@@ -39,7 +39,7 @@ const setupSteps: SetupStep[] = [
     number: '1.1',
     title: 'Users and access',
     description:
-      'Create the instance administrator and the Group Leader accounts required for data curation.',
+      'Create the instance administrator and the Data Contributor accounts required for data curation.',
     access: 'ADMIN ONLY',
   },
   {
@@ -75,7 +75,7 @@ const setupSteps: SetupStep[] = [
     title: 'Projects',
     description:
       'Register the research projects associated with organism records.',
-    access: 'ADMIN + GROUP LEADER',
+    access: 'ADMIN + DATA CONTRIBUTOR',
   },
   {
     number: '1.7',
@@ -89,7 +89,7 @@ const setupSteps: SetupStep[] = [
     title: 'External datasets',
     description:
       'Optionally link the database to datasets stored in external repositories. This step is not required before uploading organisms.',
-    access: 'ADMIN + GROUP LEADER',
+    access: 'ADMIN + DATA CONTRIBUTOR',
     optional: true,
   },
 ];
@@ -149,7 +149,7 @@ export default function Page(): React.JSX.Element {
           retained during installation, use it only for the initial login.
           Create a new administrator suitable for your database instance,
           then deactivate or remove the default account. The new
-          administrator can subsequently create Group Leader users.
+          administrator can subsequently create Data Contributor users.
         </Typography>
       </Alert>
 
@@ -167,7 +167,7 @@ export default function Page(): React.JSX.Element {
         />
 
         <Chip
-          label="GROUP LEADER"
+          label="DATA CONTRIBUTOR"
           color="success"
           variant="outlined"
           size="small"
@@ -414,7 +414,7 @@ snail@REMOTE_IP_ADDRESS:/home/remote/littorina_database/permanent_files`}
 
               <Typography variant="body2" color="text.secondary">
                 Once the metadata setup is complete, administrators and
-                Group Leaders can create, modify, or delete organism
+                Data Contributors can create, modify, or delete organism
                 records in batch.
               </Typography>
 
@@ -886,8 +886,8 @@ snail@REMOTE_IP_ADDRESS:/home/remote/littorina_database/permanent_files`}
 
             <Typography variant="body2">
               New batch processes initially appear with the{' '}
-              <strong>Submitted</strong> status. Administrators and Group
-              Leaders can monitor their batch processes from the Batch
+              <strong>Submitted</strong> status. Administrators and Data
+              Contributors can monitor their batch processes from the Batch
               processes page. The batch will remain pending until it is
               reviewed by an administrator or curator.
             </Typography>
