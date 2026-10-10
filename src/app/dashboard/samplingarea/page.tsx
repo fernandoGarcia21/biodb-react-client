@@ -159,12 +159,26 @@ export default function Page(): React.JSX.Element {
           <p>
             <strong>Sampling area</strong> is the finest geographical unit and represents 
             a shore segment delimited by precise geospatial boundaries.
-			The <strong>Id</strong> column in the table below is the consecutive number
+            The <strong>Id</strong> column in the table below is the consecutive number
             assigned automatically by the system when a sampling area is created. Use this
             number to associate an organism with a sampling area during organism batch processing.
             In the CSV template column <strong>SAMPLING AREA</strong>, only one sampling area
             identifier can be associated with an individual and this is <strong>required </strong>
             at the time of organism creation.
+          </p>
+          <p>
+            <strong>Description</strong> specifies the surveying method used for the sampling areas. 
+            <strong> High-precision instrument-based sampling: </strong> When using GPS or a
+		total station, record the instrument positioning and backsight reference
+                orientations. This information applies to the sampling area as a whole rather
+                than to individual organisms. A total station is a surveying instrument used
+                to precisely measure angles and distances and determine the relative positions
+                of sampling points. 
+             <strong> Sampling without high-precision instruments:</strong> Describe the
+                sampling site, total sampling area, and tidal height on the shore.
+          </p>
+          <p>
+            <strong>Latitude and longitude</strong> in decimal degrees, using WGS84 (EPSG:4326).
           </p>
         </Alert>
         <SamplingAreasTable
