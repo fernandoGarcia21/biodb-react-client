@@ -19,6 +19,8 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import Tooltip from '@mui/material/Tooltip';
+import { Info as InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
 import { Trash as DeleteIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { Pencil as UpdateIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
 import { BookOpenText as ProtocolIcon } from '@phosphor-icons/react/dist/ssr/BookOpenText';
@@ -181,7 +183,14 @@ export function ProjectsTable({
               <TableCell sx={{ minWidth: 360, width: '35%' }}>Description</TableCell>
               <TableCell>Responsible person</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Must read</TableCell>
+             <TableCell>
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <span>Must read</span>
+                  <Tooltip title="This Must Read information will be displayed to users when downloading organism data for properties marked as 'Yes' in the 'Require must read in projects' field. It provides important information that users should consider before combining data from this project with data from other projects. For example, for the Ecotype property in LittorinaDB, this field should describe the criteria used by the researcher to assign a group of snails to a particular ecotype." arrow>
+                    <InfoIcon size={46} style={{ cursor: 'help' }} />
+                  </Tooltip>
+                </Stack>
+              </TableCell>
               <TableCell>External datasets</TableCell>
               { (user?.levelId === USER_LEVEL_ADMIN || user?.levelId === USER_LEVEL_LEADER) && (
                 <>
@@ -322,3 +331,4 @@ export function ProjectsTable({
     </Card>
   );
 }
+

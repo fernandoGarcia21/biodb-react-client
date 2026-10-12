@@ -1,3 +1,13 @@
+flexBioDB/LittorinaDB Frontend
+
+The flexBioDB/LittorinaDB frontend was developed using DeviasKit as a
+starting template. The original DeviasKit copyright notice
+and MIT License are reproduced below.
+
+Modifications and additional software developed for
+LittorinaDB are Copyright (c) 2026 Institute of Science and Technology Austria (ISTA).
+
+
 MIT License
 
 Copyright (c) 2021 Devias

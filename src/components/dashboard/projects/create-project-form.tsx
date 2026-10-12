@@ -219,6 +219,14 @@ export function CreateProjectForm(): React.JSX.Element {
                   <InputLabel>Must read content</InputLabel>
                   <OutlinedInput {...field} label="Must read content" type="text" multiline={true} minRows={4}/>
                   {errors.must_read_content ? <FormHelperText>{errors.must_read_content.message}</FormHelperText> : null}
+                  {!errors.must_read_content ? <FormHelperText>This <strong>Must Read</strong> information will be displayed to users 
+                  when downloading organism data for properties marked as 'Yes' in 
+                  the 'Require must read in projects' field. It provides important 
+                  information that users should consider before combining data from 
+                  this project with data from other projects. For example, for the 
+                  Ecotype property in LittorinaDB, this field should describe the 
+                  criteria used by the researcher to assign a group of snails to a 
+                  particular ecotype.</FormHelperText> : null}
                 </FormControl>
                 )}
             /> 
@@ -236,3 +244,4 @@ export function CreateProjectForm(): React.JSX.Element {
     </form>
   );
 }
+
