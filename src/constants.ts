@@ -63,7 +63,7 @@ export const USER_STATUS_NEW = 2;
 export const USER_STATUS_INACTIVE = 3;
 
 export const USER_LEVEL_ADMIN = 1;
-export const USER_LEVEL_LEADER = 2;
+export const USER_LEVEL_LEADER = 2; //The (Group) 'Leader' is also known as Data Contributor in LittorinaDB specifically
 export const USER_LEVEL_INVITED = 3;
 
 export const BU_STATUS_SUBMITTED = 1; //Status of the batch upload process when it is submitted and waiting to be processed

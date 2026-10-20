@@ -63,14 +63,31 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
   }, []);
 
   React.useEffect(() => {
-    checkSession().catch((err: unknown) => {
-      logger.error(err);
-      // noop
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Expected
-  }, []);
+  // Check authentication when the provider mounts
+  void checkSession();
+
+  // Check authentication when the user returns to the tab
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      void checkSession();
+    }
+  };
+
+  document.addEventListener(
+    'visibilitychange',
+    handleVisibilityChange
+  );
+
+  return () => {
+    document.removeEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+  };
+}, [checkSession]);
 
   return <UserContext.Provider value={{ ...state, checkSession, setPerson }}>{children}</UserContext.Provider>;
 }
 
 export const UserConsumer = UserContext.Consumer;
+

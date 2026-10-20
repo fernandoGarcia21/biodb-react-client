@@ -54,12 +54,22 @@ export const protectedRoutes = [
       {
           path: '/dashboard/location/create',
           navItemKey: '',
-          requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
+          requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
         },
       {
         path: '/dashboard/location/update/:id',
         navItemKey: '',
-        requiredRoles: [USER_LEVEL_ADMIN, USER_LEVEL_LEADER], // Example: only admin and user can access.
+        requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
+      },
+      {
+          path: '/dashboard/samplingarea/create',
+          navItemKey: '',
+          requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
+        },
+      {
+        path: '/dashboard/samplingarea/update/:id',
+        navItemKey: '',
+        requiredRoles: [USER_LEVEL_ADMIN], // Example: only admin and user can access.
       },
       {
           path: '/dashboard/organisms/batch/create',

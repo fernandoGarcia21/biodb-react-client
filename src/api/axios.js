@@ -1,19 +1,33 @@
 import axios from 'axios';
 import { API } from '../constants';
 
-const instance = axios.create({ baseURL: API,
-              withCredentials: true });
+const instance = axios.create({
+  baseURL: API,
+  withCredentials: true
+});
 
-// Response interceptor to handle 429 errors
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 429) {
-      // Redirect to 429 error page
-      if (typeof window !== 'undefined') {
-        window.location.href = '/errors/too-many-requests';
+    if (typeof window !== 'undefined') {
+      const status = error.response?.status;
+      const code = error.response?.data?.code;
+
+      // Preserve existing rate-limit handling
+      if (status === 429) {
+        window.location.replace('/errors/too-many-requests');
+      }
+
+      // Redirect only when the JWT has expired
+      if (status === 401 && code === 'TOKEN_EXPIRED') {
+        const loginPath = '/auth/sign-in';
+
+        if (window.location.pathname !== loginPath) {
+          window.location.replace(`${loginPath}?expired=true`);
+        }
       }
     }
+
     return Promise.reject(error);
   }
 );
