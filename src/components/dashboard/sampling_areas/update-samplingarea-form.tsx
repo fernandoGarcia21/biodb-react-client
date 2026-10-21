@@ -57,7 +57,7 @@ const schema = zod.object({
     }),
   country_id: zod.string().min(2, { message: 'Country is required' }).max(2),
   location_id: zod.number().min(1, { message: 'Location is required' }),
-  habitat_id: zod.number().optional(),
+  habitat_id: zod.number().min(1, { message: 'Habitat is required' }),
 });
 
 type Values = zod.infer<typeof schema>;
