@@ -157,7 +157,7 @@ export default function Page(): React.JSX.Element {
         {/**<LocationsFilters />  */}
 		<Alert severity="info" sx={{ mb: 2 }}>
           <p>
-            <strong>Location</strong> is as a broad geographic region belonging to a country that aggregates one or more <strong>sampling areas</strong>.
+            <strong>Location</strong> is as a geographic region within a country that encompasses one or more <strong>sampling areas</strong>, typically spanning <strong>tens rather than hundreds of kilometres</strong> of coastline.
           </p>
         </Alert>
         <LocationsTable
