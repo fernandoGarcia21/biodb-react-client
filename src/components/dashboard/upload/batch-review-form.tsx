@@ -31,7 +31,7 @@ import { API, BU_STATUS_APPROVED, BU_STATUS_REJECTED} from '@/constants';
 import { getBatchFileRequest } from '@/api/files';
 
 const schema = zod.object({
-  name : zod.string().min(1, { message: 'Name is required' }).max(255, { message: 'Name is too long' }),
+  name : zod.string().max(255, { message: 'Name is too long' }),
   file_name: zod.string().min(1, { message: 'File name is required' }).max(255, { message: 'File name is too long' }),
   internal_file_name: zod.string().min(1, { message: 'Internal file name is required' }).max(255, { message: 'Internal file name is too long' }),
   parameters: zod.string().max(1000).or(zod.string().max(0)),
