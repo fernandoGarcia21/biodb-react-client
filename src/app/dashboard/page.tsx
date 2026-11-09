@@ -24,7 +24,7 @@ export default function Page(): React.JSX.Element {
   const [customCategories, setCustomCategories] = useState<any[]>([]);
   const [locationOrganismsObjects, setLocationOrganismsObjects] = useState<any[]>([]);
   const [samplingAreasCoordinates, setSamplingAreasCoordinates] = useState<
-    { id: number; name: string; latitude: number; longitude: number; number_individuals: number, habitat_name: string }[]
+    { id: number; name: string; latitude: number; longitude: number; number_individuals: number, habitat_name: string; habitat_structure: string | null; is_contact_zone: boolean | null }[]
   >([]);
   const [totalSamples, setTotalSamples] = useState<number>(0);
   const [speciesCount, setSpeciesCount] = useState<number>(0);
@@ -173,7 +173,13 @@ export default function Page(): React.JSX.Element {
                   latitude,
                   longitude,
                   number_individuals: Number.isFinite(numberIndividuals) ? numberIndividuals : 0,
-                  habitat_name: String(item.habitat_name ?? `Habitat ${index + 1}`),
+                  habitat_name: String(item.habitat_name ?? `-`),
+                  habitat_structure: item.habitat_structure_name == null ? null : String(item.habitat_structure_name),
+                  is_contact_zone: item.is_contact_zone === true || item.is_contact_zone === 'true'
+                    ? true
+                    : item.is_contact_zone === false || item.is_contact_zone === 'false'
+                      ? false
+                      : null,
                 };
               })
               .filter(
@@ -182,7 +188,9 @@ export default function Page(): React.JSX.Element {
                   latitude: number; 
                   longitude: number; 
                   number_individuals: number; 
-                  habitat_name: string } =>
+                  habitat_name: string;
+                  habitat_structure: string | null;
+                  is_contact_zone: boolean | null } =>
                   item !== null
               );
 

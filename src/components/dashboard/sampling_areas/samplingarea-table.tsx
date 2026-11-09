@@ -13,6 +13,7 @@ import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
+import TableSortLabel from '@mui/material/TableSortLabel';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Tooltip from '@mui/material/Tooltip';
@@ -22,7 +23,7 @@ import { Pencil as UpdateIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
 
 import { useSelection } from '@/hooks/use-selection';
 import { paths} from '@/paths';
-import { USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
+import { API, USER_LEVEL_ADMIN, USER_LEVEL_LEADER } from '@/constants';
 import { useUser } from '@/hooks/use-user';
 import { useRouter } from 'next/navigation';
 
@@ -34,10 +35,16 @@ export interface SamplingArea {
   latitude: string;
   longitude: string;
   description: string;
-  habitat_name?: string;
+  habitat_code?: string;
+  habitat_structure_name?: string;
+  habitat_photo_file_name?: string;
+  is_contact_zone?: boolean;
 }
 
 interface SamplingAreasTableProps {
+  sortBy: keyof SamplingArea | null;
+  sortDirection: 'asc' | 'desc';
+  onSort: (column: keyof SamplingArea) => void;
   count?: number;
   page?: number;
   rows?: SamplingArea[];
@@ -49,6 +56,9 @@ interface SamplingAreasTableProps {
 }
 
 export function SamplingAreasTable({
+  sortBy,
+  sortDirection,
+  onSort,
   count = 0,
   rows = [],
   page = 0,
@@ -58,10 +68,42 @@ export function SamplingAreasTable({
   handleDeleteClickOpen,
   handleUpdateClick,
 }: SamplingAreasTableProps): React.JSX.Element {
+  const suppressSortClickRef = React.useRef(false);
+  const dragRef = React.useRef<{ startX: number; scrollLeft: number; active: boolean } | null>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isOverDragArea, setIsOverDragArea] = React.useState(false);
+
   const DESCRIPTION_PREVIEW_LENGTH = 140;
   const topScrollRef = React.useRef<HTMLDivElement | null>(null);
   const tableScrollRef = React.useRef<HTMLDivElement | null>(null);
   const [topScrollbarWidth, setTopScrollbarWidth] = React.useState(0);
+
+  const isDragArea = (event: React.PointerEvent<HTMLDivElement>): boolean => {
+    const target = event.target as HTMLElement;
+    if (target.closest('a, button, input, label, select, textarea') ||
+      (target.closest('[role="button"]') && !target.closest('thead'))) return false;
+    const container = event.currentTarget;
+    const bounds = container.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    // Exclude native scrollbars.
+    if (x >= container.clientWidth || y >= container.clientHeight) return false;
+    const cell = target.closest('td, th');
+    const cellBounds = cell?.getBoundingClientRect();
+    const nearColumnBorder = cellBounds !== undefined && (
+      Math.abs(event.clientX - cellBounds.left) <= 5 ||
+      Math.abs(event.clientX - cellBounds.right) <= 5
+    );
+    return nearColumnBorder || Boolean(target.closest('thead'));
+  };
+
+  const stopDragging = (event: React.PointerEvent<HTMLDivElement>): void => {
+    dragRef.current = null;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
 
   const rowIds = React.useMemo(() => {
     return rows.map((sample_area) => sample_area.id);
@@ -151,7 +193,52 @@ export function SamplingAreasTable({
       >
         <Box sx={{ width: topScrollbarWidth || '100%', height: 1 }} />
       </Box>
-      <Box ref={tableScrollRef} sx={{ overflowX: 'auto' }}>
+      <Box
+        ref={tableScrollRef}
+        onPointerDown={(event) => {
+          suppressSortClickRef.current = false;
+          if (event.pointerType !== 'mouse' || event.button !== 0) return;
+          if (!isDragArea(event)) return;
+          event.preventDefault();
+          dragRef.current = { startX: event.clientX, scrollLeft: event.currentTarget.scrollLeft, active: false };
+        }}
+        onPointerMove={(event) => {
+          setIsOverDragArea(event.pointerType === 'mouse' && isDragArea(event));
+          const drag = dragRef.current;
+          if (!drag) return;
+          const distance = event.clientX - drag.startX;
+          if (!drag.active && Math.abs(distance) < 5) return;
+          if (!drag.active) {
+            drag.active = true;
+            suppressSortClickRef.current = true;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setIsDragging(true);
+          }
+          event.preventDefault();
+          event.currentTarget.scrollLeft = drag.scrollLeft - distance;
+        }}
+        onClickCapture={(event) => {
+          if (suppressSortClickRef.current && event.detail !== 0) {
+            event.preventDefault();
+            event.stopPropagation();
+            suppressSortClickRef.current = false;
+          }
+        }}
+        onPointerUp={stopDragging}
+        onPointerCancel={stopDragging}
+        onLostPointerCapture={() => { dragRef.current = null; setIsDragging(false); }}
+        onPointerLeave={() => {
+          setIsOverDragArea(false);
+          if (!dragRef.current?.active) dragRef.current = null;
+        }}
+        sx={{
+          overflowX: 'auto',
+          cursor: isDragging ? 'grabbing' : isOverDragArea ? 'grab' : 'auto',
+          userSelect: isDragging ? 'none' : 'auto',
+          '& thead': { userSelect: 'none' },
+        }}
+      >
+
         <Table sx={{ minWidth: '800px' }}>
           <TableHead>
             <TableRow>
@@ -168,14 +255,30 @@ export function SamplingAreasTable({
                   }}
                 />
               </TableCell>
-              <TableCell>Id</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Country</TableCell>
-              <TableCell>Location</TableCell>
-              <TableCell>Latitude</TableCell>
-              <TableCell>Longitude</TableCell>
-              <TableCell>Habitat</TableCell>
-              <TableCell sx={{ minWidth: 360, width: '35%' }}>Description</TableCell>
+              {([
+                { key: 'id', label: 'Id' },
+                { key: 'name', label: 'Name' },
+                { key: 'country_name', label: 'Country' },
+                { key: 'location_name', label: 'Location' },
+                { key: 'latitude', label: 'Latitude' },
+                { key: 'longitude', label: 'Longitude' },
+                { key: 'habitat_code', label: 'Habitat code' },
+                { key: 'habitat_structure_name', label: 'Habitat structure' },
+                { key: 'is_contact_zone', label: 'Contact zone in the SA' },
+                { key: 'habitat_photo_file_name', label: 'Habitat photo' },
+                { key: 'description', label: 'Description' },
+              ] satisfies { key: keyof SamplingArea; label: string }[]).map((column) => (
+                <TableCell
+                  key={column.key}
+                  sortDirection={sortBy === column.key ? sortDirection : false}
+                  sx={column.key === 'description' ? { minWidth: 360, width: '35%' } : undefined}
+                  onClick={() => onSort(column.key)}
+                >
+                  <TableSortLabel active={sortBy === column.key} direction={sortBy === column.key ? sortDirection : 'asc'}>
+                    {column.label}
+                  </TableSortLabel>
+                </TableCell>
+              ))}
               {(user?.levelId === USER_LEVEL_ADMIN) && (<>
                 <TableCell>Update</TableCell>
                 <TableCell>Delete</TableCell>
@@ -216,7 +319,20 @@ export function SamplingAreasTable({
                   <TableCell>{row.location_name}</TableCell>
                   <TableCell>{row.latitude}</TableCell>
                   <TableCell>{row.longitude}</TableCell>
-                  <TableCell>{row.habitat_name}</TableCell>
+                  <TableCell>{row.habitat_code}</TableCell>
+                  <TableCell>{row.habitat_structure_name}</TableCell>
+                  <TableCell>{row.is_contact_zone ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>
+                    {row.habitat_photo_file_name ? (
+                      <Link
+                        href={`${API}/sampling_area_images/${encodeURIComponent(row.habitat_photo_file_name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View Photo
+                      </Link>
+                    ) : 'Not available'}
+                  </TableCell>
                   <TableCell sx={{ minWidth: 360, width: '35%' }}>
                     {(() => {
                       const description = row.description ?? '';

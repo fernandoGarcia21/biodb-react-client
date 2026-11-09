@@ -30,7 +30,9 @@ export interface MapOverviewProps {
                             latitude: number; 
                             longitude: number; 
                             number_individuals: number,
-                            habitat_name: string }[];
+                            habitat_name: string,
+                            habitat_structure: string | null,
+                            is_contact_zone: boolean | null }[];
   sx?: SxProps;
   mapHeight?: number;
   totalSamples: number;

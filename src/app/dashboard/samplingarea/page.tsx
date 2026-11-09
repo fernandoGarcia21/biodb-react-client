@@ -13,6 +13,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { config } from '@/config';
+import { SamplingAreaListGuidelines } from '@/components/dashboard/sampling_areas/sampling-area-list-guidelines';
 import { SamplingAreasFilters } from '@/components/dashboard/sampling_areas/samplingarea-filters';
 import { SamplingAreasTable } from '@/components/dashboard/sampling_areas/samplingarea-table';
 import type { SamplingArea } from '@/components/dashboard/sampling_areas/samplingarea-table';
@@ -28,7 +29,7 @@ import { useBrandTitle } from '@/hooks/use-brand-title';
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
-  const [samplingAreas, setSamplingAreas] = useState([]);
+  const [samplingAreas, setSamplingAreas] = useState<SamplingArea[]>([]);
   const isMounted = useRef(false);
   const { user } = useUser();
   const brandTitle = useBrandTitle();
@@ -61,8 +62,47 @@ export default function Page(): React.JSX.Element {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  //Paginate the list of sampling areas
-  const paginatedSamplingAreas = applyPagination(samplingAreas, page, rowsPerPage);
+  const [searchText, setSearchText] = useState('');
+  const filteredSamplingAreas = React.useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (query.length < 3) return samplingAreas;
+    return samplingAreas.filter((area) => [
+      area.name, area.location_name, area.country_name, area.description, area.habitat_structure_name, area.habitat_code,
+    ].some((value) => (value ?? '').toLowerCase().includes(query)));
+  }, [samplingAreas, searchText]);
+
+  const [sort, setSort] = useState<{ column: keyof SamplingArea; direction: 'asc' | 'desc' } | null>(null);
+  const sortedSamplingAreas = React.useMemo(() => {
+    if (!sort) return filteredSamplingAreas;
+    const numericColumns: (keyof SamplingArea)[] = ['id', 'latitude', 'longitude'];
+    return [...filteredSamplingAreas].sort((a, b) => {
+      const left = a[sort.column];
+      const right = b[sort.column];
+      let comparison: number;
+      if (numericColumns.includes(sort.column)) {
+        comparison = Number(left) - Number(right);
+      } else if (sort.column === 'is_contact_zone') {
+        comparison = Number(left === true || String(left) === 'true') - Number(right === true || String(right) === 'true');
+      } else {
+        comparison = String(left ?? '').localeCompare(String(right ?? ''), undefined, { numeric: true, sensitivity: 'base' });
+      }
+      return sort.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredSamplingAreas, sort]);
+
+  const handleSort = (column: keyof SamplingArea) => {
+    setSort((previous) => ({ column, direction: previous?.column === column && previous.direction === 'asc' ? 'desc' : 'asc' }));
+    setPage(0);
+  };
+
+  // Keep pagination valid when filtering or deleting the last row on a page.
+  const currentPage = Math.min(page, Math.max(0, Math.ceil(filteredSamplingAreas.length / rowsPerPage) - 1));
+  const paginatedSamplingAreas = applyPagination(sortedSamplingAreas, currentPage, rowsPerPage);
+
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    setPage(0);
+  };
 
   //Define the event handlers for the pagination
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,7 +194,7 @@ export default function Page(): React.JSX.Element {
             </div>
           )}
         </Stack>
-        {/**<SamplingAreasFilters /> */}
+        <SamplingAreaListGuidelines>
         <Alert severity="info" sx={{ mb: 2 }}>
           <p>
             <strong>Sampling area</strong> is the finest geographical unit, representing a specific shore segment, 
@@ -181,9 +221,14 @@ export default function Page(): React.JSX.Element {
             <strong>Latitude and longitude</strong> in decimal degrees, using WGS84 (EPSG:4326).
           </p>
         </Alert>
+        </SamplingAreaListGuidelines>
+        <SamplingAreasFilters value={searchText} onChange={handleSearchChange} />
         <SamplingAreasTable
-          count={samplingAreas.length}
-          page={page}
+          sortBy={sort?.column ?? null}
+          sortDirection={sort?.direction ?? 'asc'}
+          onSort={handleSort}
+          count={filteredSamplingAreas.length}
+          page={currentPage}
           rows={paginatedSamplingAreas}
           rowsPerPage={rowsPerPage}
           myRowsPerPageChangeEvent={handleChangeRowsPerPage}

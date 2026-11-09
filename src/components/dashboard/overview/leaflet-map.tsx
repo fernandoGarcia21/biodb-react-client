@@ -16,7 +16,9 @@ interface LeafletMapProps {
                             latitude: number; 
                             longitude: number; 
                             number_individuals: number,
-                            habitat_name: string }[];
+                            habitat_name: string,
+                            habitat_structure: string | null,
+                            is_contact_zone: boolean | null }[];
   mapHeight?: number;
 }
 
@@ -33,13 +35,13 @@ export function LeafletMap({ samplingAreasCoordinates, mapHeight = 320 }: Leafle
       groupedByCoordinate.set(key, existing);
     });
 
-    const markerList: Array<{ key: string; id: number; name: string; latitude: number; longitude: number; number_individuals: number; habitat_name: string }> = [];
+    const markerList: Array<{ key: string; id: number; name: string; latitude: number; longitude: number; number_individuals: number; habitat_name: string; habitat_structure: string | null; is_contact_zone: boolean | null }> = [];
     const jitterStep = 0.00005;
 
     groupedByCoordinate.forEach((group, key) => {
       if (group.length === 1) {
         const item = group[0];
-        markerList.push({ key: `${item.id}-${key}`, id: item.id, name: item.name, latitude: item.latitude, longitude: item.longitude, number_individuals: item.number_individuals, habitat_name: item.habitat_name });
+        markerList.push({ key: `${item.id}-${key}`, id: item.id, name: item.name, latitude: item.latitude, longitude: item.longitude, number_individuals: item.number_individuals, habitat_name: item.habitat_name, habitat_structure: item.habitat_structure, is_contact_zone: item.is_contact_zone });
         return;
       }
 
@@ -55,6 +57,8 @@ export function LeafletMap({ samplingAreasCoordinates, mapHeight = 320 }: Leafle
           longitude: item.longitude - radius * Math.cos(angle),
           number_individuals: item.number_individuals,
           habitat_name: item.habitat_name,
+          habitat_structure: item.habitat_structure,
+          is_contact_zone: item.is_contact_zone
         });
       });
     });
@@ -109,14 +113,20 @@ export function LeafletMap({ samplingAreasCoordinates, mapHeight = 320 }: Leafle
                 href={paths.dashboard.samplingAreaDisplay(Number(item.id))}
                 variant="subtitle1"
                 underline="hover"
-                sx={{ display: 'block', textAlign: 'center', lineHeight: 1.2, mb: 0.25 }}
+                sx={{ display: 'block', textAlign: 'center', lineHeight: 1.2, mb: 1 }}
               >
                 {item.name}
               </Link>
-              <Typography variant="body2" sx={{ textAlign: 'left', lineHeight: 1.2, mb: 0.25 }}>
+              <Typography component="div" variant="body2" sx={{ textAlign: 'left', lineHeight: 1.2, mb: 0.25 }}>
                 <Box component="span" sx={{ fontWeight: 700 }}>Habitat:</Box> {item.habitat_name}
               </Typography>
-              <Typography variant="body2" sx={{ textAlign: 'left', lineHeight: 1.2, mb: 0.25 }}>
+              <Typography component="div" variant="body2" sx={{ textAlign: 'left', lineHeight: 1.2, mb: 0.25 }}>
+                <Box component="span" sx={{ fontWeight: 700 }}>Habitat structure:</Box> {item.habitat_structure || '-'}
+              </Typography>
+              <Typography component="div" variant="body2" sx={{ textAlign: 'left', lineHeight: 1.2, mb: 0.25 }}>
+                <Box component="span" sx={{ fontWeight: 700 }}>Contact zone in the SA:</Box> {item.is_contact_zone == null ? '-' : item.is_contact_zone ? 'Yes' : 'No'}
+              </Typography>
+              <Typography component="div" variant="body2" sx={{ textAlign: 'left', lineHeight: 1.2, mb: 0.25 }}>
                 <Box component="span" sx={{ fontWeight: 700 }}>Individuals:</Box> {item.number_individuals}
               </Typography>
               <Button

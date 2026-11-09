@@ -25,6 +25,8 @@ export interface Organism {
   sampling_site_name: string;
   location_name: string;
   country_name: string;
+  habitat_structure?: string | null;
+  is_contact_zone?: boolean | null;
   projects: string;
   project_ids: string;
   properties: { f2: string; f4: string }[]; // <-- Fix here
@@ -49,6 +51,60 @@ export function OrganismsTable({
   myRowsPerPageChangeEvent,
   myPageChangeEvent,
 }: OrganismTableProps): React.JSX.Element {
+  const topScrollRef = React.useRef<HTMLDivElement>(null);
+  const tableScrollRef = React.useRef<HTMLDivElement>(null);
+  const tableRef = React.useRef<HTMLTableElement>(null);
+  const dragRef = React.useRef<{ startX: number; scrollLeft: number; active: boolean } | null>(null);
+  const [tableWidth, setTableWidth] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isOverDragArea, setIsOverDragArea] = React.useState(false);
+
+  React.useEffect(() => {
+    const table = tableRef.current;
+    const container = tableScrollRef.current;
+    if (!table || !container) return;
+
+    const observer = new ResizeObserver(() => {
+      setTableWidth(container.scrollWidth);
+    });
+    observer.observe(table);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  const syncScroll = (source: HTMLDivElement, target: HTMLDivElement | null): void => {
+    if (target && target.scrollLeft !== source.scrollLeft) {
+      target.scrollLeft = source.scrollLeft;
+    }
+  };
+
+  const isDragArea = (event: React.PointerEvent<HTMLDivElement>): boolean => {
+    const target = event.target as HTMLElement;
+    if (target.closest('a, button, input, label, select, textarea, [role="button"]')) return false;
+    const container = event.currentTarget;
+    const bounds = container.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    // Exclude native scrollbars; reserve a 12px strip along the visible edges.
+    if (x >= container.clientWidth || y >= container.clientHeight) return false;
+    const cell = target.closest('td, th');
+    const cellBounds = cell?.getBoundingClientRect();
+    const nearColumnBorder = cellBounds !== undefined && (
+      Math.abs(event.clientX - cellBounds.left) <= 5 ||
+      Math.abs(event.clientX - cellBounds.right) <= 5
+    );
+    return nearColumnBorder || Boolean(target.closest('thead')) || x < 12 || x > container.clientWidth - 12 ||
+      y < 12 || y > container.clientHeight - 12;
+  };
+
+  const stopDragging = (event: React.PointerEvent<HTMLDivElement>): void => {
+    dragRef.current = null;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   const isWebUrl = (value: unknown): value is string => {
     if (typeof value !== 'string') {
       return false;
@@ -77,24 +133,57 @@ export function OrganismsTable({
 
   return (
     <Card>
-      <Box sx={{ overflowX: 'auto' }}>
-        <Table sx={{ minWidth: '800px' }}>
+      <Box
+        ref={topScrollRef}
+        role="region"
+        aria-label="Scroll organisms table horizontally"
+        tabIndex={0}
+        onScroll={(event) => syncScroll(event.currentTarget, tableScrollRef.current)}
+        sx={{ overflowX: 'auto', overflowY: 'hidden' }}
+      >
+        <Box sx={{ width: tableWidth, height: '16px' }} />
+      </Box>
+      <Box
+        ref={tableScrollRef}
+        onScroll={(event) => syncScroll(event.currentTarget, topScrollRef.current)}
+        onPointerDown={(event) => {
+          if (event.pointerType !== 'mouse' || event.button !== 0) return;
+          if (!isDragArea(event)) return;
+          event.preventDefault();
+          dragRef.current = { startX: event.clientX, scrollLeft: event.currentTarget.scrollLeft, active: false };
+        }}
+        onPointerMove={(event) => {
+          setIsOverDragArea(event.pointerType === 'mouse' && isDragArea(event));
+          const drag = dragRef.current;
+          if (!drag) return;
+          const distance = event.clientX - drag.startX;
+          if (!drag.active && Math.abs(distance) < 5) return;
+          if (!drag.active) {
+            drag.active = true;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setIsDragging(true);
+          }
+          event.preventDefault();
+          event.currentTarget.scrollLeft = drag.scrollLeft - distance;
+        }}
+        onPointerUp={stopDragging}
+        onPointerCancel={stopDragging}
+        onLostPointerCapture={() => { dragRef.current = null; setIsDragging(false); }}
+        onPointerLeave={() => {
+          setIsOverDragArea(false);
+          if (!dragRef.current?.active) dragRef.current = null;
+        }}
+        sx={{
+          overflowX: 'auto',
+          cursor: isDragging ? 'grabbing' : isOverDragArea ? 'grab' : 'auto',
+          userSelect: isDragging ? 'none' : 'auto',
+          '& thead': { userSelect: 'none' },
+        }}
+      >
+        <Table ref={tableRef} sx={{ minWidth: '800px' }}>
           <TableHead>
             <TableRow>
-              <TableCell align="center" colSpan={1}></TableCell>
-              <TableCell align="center" colSpan={7}></TableCell>
-              {/* Add group of headers for dynamic properties */}
-              {headersGroupping.length > 0 && headersGroupping.map((group) => (
-                <TableCell 
-                key={`${group.trait_name}-${group.count}`} 
-                align="center" 
-                colSpan={group.count}
-                sx={{ borderLeft: '1px solid #ccc' }} // Add border to grouped headers
-                >{group.trait_name}</TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell padding="checkbox">
+              <TableCell padding="checkbox" rowSpan={2}>
                 <Checkbox
                   checked={selectedAll}
                   indeterminate={selectedSome}
@@ -107,13 +196,29 @@ export function OrganismsTable({
                   }}
                 />
               </TableCell>
-              <TableCell>Internal Id</TableCell>
-              <TableCell>Species</TableCell>
-              <TableCell>Habitat</TableCell>
+              <TableCell rowSpan={2} scope="col">Internal Id</TableCell>
+              <TableCell rowSpan={2} scope="col">Species</TableCell>
+              <TableCell align="center" colSpan={6} scope="colgroup" sx={{ borderLeft: '1px solid #ccc' }}>
+                Geography and habitat
+              </TableCell>
+              <TableCell rowSpan={2} scope="col" sx={{ borderLeft: '1px solid #ccc' }}>Projects</TableCell>
+              {/* Add group of headers for dynamic properties */}
+              {headersGroupping.length > 0 && headersGroupping.map((group) => (
+                <TableCell 
+                key={`${group.trait_name}-${group.count}`} 
+                align="center" 
+                colSpan={group.count}
+                sx={{ borderLeft: '1px solid #ccc' }} // Add border to grouped headers
+                >{group.trait_name}</TableCell>
+              ))}
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ borderLeft: '1px solid #ccc' }}>Country</TableCell>
+              <TableCell>Location</TableCell>
               <TableCell>Sampling area</TableCell>
-              <TableCell>Sampling location</TableCell>
-              <TableCell>Country</TableCell>
-              <TableCell>Project</TableCell>
+              <TableCell>Habitat</TableCell>
+              <TableCell>Habitat structure</TableCell>
+              <TableCell>Contact zone in the SA</TableCell>
               {/* Add headers for dynamic properties */}
               {flatHeaders.length > 0 && flatHeaders.map((key) => (
                 <TableCell key={key}>{key}</TableCell>
@@ -149,11 +254,13 @@ export function OrganismsTable({
                     </Stack>
                   </TableCell>
                   <TableCell>{row.species_name}</TableCell>
-                  <TableCell>{row.habitat_name}</TableCell>
-                  <TableCell>{row.sampling_site_name}</TableCell>
+                  <TableCell sx={{ borderLeft: '1px solid #ccc' }}>{row.country_name}</TableCell>
                   <TableCell>{row.location_name}</TableCell>
-                  <TableCell>{row.country_name}</TableCell>
-                  <TableCell>{row.projects}</TableCell>
+                  <TableCell>{row.sampling_site_name}</TableCell>
+                  <TableCell>{row.habitat_name}</TableCell>
+                  <TableCell>{row.habitat_structure || '-'}</TableCell>
+                  <TableCell>{row.is_contact_zone == null ? '-' : row.is_contact_zone ? 'Yes' : 'No'}</TableCell>
+                  <TableCell sx={{ borderLeft: '1px solid #ccc' }}>{row.projects}</TableCell>
                   {/* Render dynamic properties */}
                   {flatHeaders.length > 0 && flatHeaders.map((key) => {
                     const propertyValue = propertiesRow[key];
@@ -193,4 +300,3 @@ export function OrganismsTable({
     </Card>
   );
 }
-

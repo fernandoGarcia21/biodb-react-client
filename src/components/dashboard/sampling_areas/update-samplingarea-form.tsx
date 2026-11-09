@@ -12,6 +12,8 @@ import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import CardHeader from '@mui/material/CardHeader';
 import Divider from '@mui/material/Divider';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
@@ -19,18 +21,35 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { Controller, set, useForm } from 'react-hook-form';
+import Typography from '@mui/material/Typography';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { styled } from '@mui/material/styles';
+import { API } from '@/constants';
+import { getHabitatStructuresRequest } from '@/api/habitatCodes';
+import { Controller, useForm } from 'react-hook-form';
 import { z as zod } from 'zod';
-import { config } from '@/config';
 import { AxiosError } from 'axios';
 
 import { getSamplingAreaRequest, updateSamplingAreaRequest } from '@/api/samplingAreas';
-import { getAllHabitatsRequest } from '@/api/habitats';
 import { getLocationsByCountryRequest } from '@/api/locations';
 import { getCountriesWithLocationsRequest } from '@/api/countries';
+import { HabitatCodeSelector } from './habitat-code-selector';
+import { SamplingAreaGuidelines, contactZoneGuidance, descriptionGuidance, photographGuidance } from './sampling-area-guidelines';
 import { useBrandTitle } from '@/hooks/use-brand-title';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB.
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
 const schema = zod.object({
   name: zod.string().min(1, { message: 'Name is required' }).max(255, { message: 'Name is too long' }),
@@ -57,7 +76,17 @@ const schema = zod.object({
     }),
   country_id: zod.string().min(2, { message: 'Country is required' }).max(2),
   location_id: zod.number().min(1, { message: 'Location is required' }),
-  habitat_id: zod.number().min(1, { message: 'Habitat is required' }),
+  habitat_code: zod.string().min(1, { message: 'Habitat code is required' }).max(25),
+  is_contact_zone: zod.boolean({message: 'Contact zone status is required'}),
+  habitat_structure_id: zod.number().min(1, { message: 'Habitat structure is required' }),
+  imageFile: zod.custom<File>((value) => typeof File !== 'undefined' && value instanceof File, {
+    message: 'Select an image file.',
+  })
+    .refine((file) => !file || file.size <= MAX_FILE_SIZE, 'Maximum image size is 5 MB.')
+    .refine((file) => !file || (
+      /\.(jpg|jpeg|png)$/i.test(file.name) && ['image/jpeg', 'image/png'].includes(file.type)
+    ), 'Only .jpg, .jpeg or .png images are supported.')
+    .optional(),
 });
 
 type Values = zod.infer<typeof schema>;
@@ -74,13 +103,15 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
     setError,
     setValue,
     watch,
-    formState,
     formState: { errors, isSubmitSuccessful },
   } = useForm<Values>({ resolver: zodResolver(schema),
     defaultValues: {
       name: '',
       description: '',
-      habitat_id: 0,
+      habitat_code: '',
+      habitat_structure_id: 0,
+      imageFile: undefined,
+      is_contact_zone: false,
       country_id: '0',
       location_id: 0,
       longitude: '',
@@ -89,22 +120,30 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
    });
 
 
+  const imageFile = watch('imageFile');
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!imageFile || !['image/jpeg', 'image/png'].includes(imageFile.type)) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  const [listHabitatStructures, setListHabitatStructures] = useState<{ id: number; name: string; description?: string | null }[]>([]);
+  const [existingPhotoName, setExistingPhotoName] = useState('');
+  const photoUrl = imagePreviewUrl ?? (existingPhotoName ? `${API}/sampling_area_images/${encodeURIComponent(existingPhotoName)}` : null);
+  const [habitatValid, setHabitatValid] = useState(false);
   const [isPending, setIsPending] = React.useState<boolean>(false);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [listCountries, setListCountries] = useState<{ id: number; name: string }[]>([]);
   const [listLocations, setListLocations] = useState<{ id: number; name: string }[]>([]);
-  const [listHabitats, setListHabitats] = useState<{ id: number; name: string; description: string  }[]>([]);
   const params = useParams<{ id: string }>();
-  const [samplingAreaId, setSamplingAreaId] = useState(params.id);
+  const [samplingAreaId] = useState(params.id);
   const [samplingAreaName, setSamplingAreaName] = useState<string>('');
-
-  // Watch the habitat_id field to get the selected habitat
-  const selectedHabitatId = watch('habitat_id');
-  
-  // Find the selected habitat from the list
-  const selectedHabitat = React.useMemo(() => {
-    return listHabitats.find(habitat => habitat.id === selectedHabitatId);
-  }, [selectedHabitatId, listHabitats]);
 
   const isMounted = useRef(false);
   
@@ -122,22 +161,24 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
                       location_id: responseSamplingArea.data[0].location_id,
                       longitude: responseSamplingArea.data[0].longitude,
                       latitude: responseSamplingArea.data[0].latitude,
-                      habitat_id: responseSamplingArea.data[0].habitat_id ?? 0,});
+                      habitat_code: responseSamplingArea.data[0].habitat_code ? responseSamplingArea.data[0].habitat_code : '',
+                      habitat_structure_id: Number(responseSamplingArea.data[0].habitat_structure_id ?? 0),
+                      imageFile: undefined,
+                      is_contact_zone: responseSamplingArea.data[0].is_contact_zone === true || responseSamplingArea.data[0].is_contact_zone === 'true'});
+              setExistingPhotoName(responseSamplingArea.data[0].habitat_photo_file_name ?? '');
 
               setSamplingAreaName(responseSamplingArea.data[0].name);
               document.title = `Update Sampling Area: ${responseSamplingArea.data[0].name} | ${brandTitle}`;
             }
 
             //Fetch countries info
-            const responseCountries = await getCountriesWithLocationsRequest();
+            const [responseCountries, responseStructures] = await Promise.all([
+              getCountriesWithLocationsRequest(),
+              getHabitatStructuresRequest(),
+            ]);
+            setListHabitatStructures(responseStructures.data);
             if (responseCountries.data && responseCountries.data.length > 0) {
               setListCountries(responseCountries.data);
-            }
-
-            //Fech habitats info
-            const responseHabitats =  await getAllHabitatsRequest();
-            if (responseHabitats.data && responseHabitats.data.length > 0) {
-              setListHabitats(responseHabitats.data);
             }
 
             if(responseSamplingArea.data[0].country_id && responseSamplingArea.data[0].country_id !== '0') {
@@ -153,6 +194,7 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
           }
         } catch (error) {
           console.error('Error fetching sampling area info:', error);
+          setError('root', { type: 'server', message: 'Could not load the sampling area options. Please reload the page.' });
         }
       };
   
@@ -163,15 +205,22 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
 //When the Update button is pressed, the form is submitted and the sampling area is updated
   const onSubmit = React.useCallback(
       async (values: Values): Promise<void> => {
+        if (!habitatValid) {
+          setError('habitat_code', { type: 'validate', message: 'Complete all habitat descriptors before saving.' });
+          return;
+        }
         setIsPending(true);
         setSuccessMessage(null);
         try{
           // Convert habitat_id to null if it's 0
           const submitData = {
-            ...values,
-            habitat_id: values.habitat_id === 0 ? null : values.habitat_id
+            ...values
           };
           await updateSamplingAreaRequest(samplingAreaId, submitData);
+          if (values.imageFile) {
+            setExistingPhotoName(values.imageFile.name);
+            setValue('imageFile', undefined);
+          }
           setSuccessMessage(`Sampling area ${values.name} updated successfully!`);
           setIsPending(false);
 
@@ -190,7 +239,7 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
         // After refresh, GuestGuard will handle the redirect
         router.refresh();
       },
-      [router, reset, setError]
+      [router, setError, setValue, samplingAreaId, habitatValid]
     );
 
   // Handle country change to fetch locations
@@ -221,6 +270,7 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
         <CardHeader title={`Update sampling area ${samplingAreaName}`} />
         <Divider />
         <CardContent>
+          <SamplingAreaGuidelines />
           <Stack spacing={3} sx={{ maxWidth: 'sm' }}>
             <Controller
                 control={control}
@@ -235,56 +285,99 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
             />
             <Controller
                 control={control}
+                name="habitat_code"
+                render={({ field }) => (
+                <HabitatCodeSelector
+                  value={field.value ?? ''}
+                  onChange={(value) => { setValue('habitat_code', value, { shouldValidate: true, shouldDirty: true }); }}
+                  onBlur={field.onBlur}
+                  onValidityChange={setHabitatValid}
+                  error={errors.habitat_code?.message}
+                  disabled={isPending}
+                />
+                )}
+            />
+            <Controller
+              control={control}
+              name="habitat_structure_id"
+              render={({ field }) => (
+                <FormControl fullWidth error={Boolean(errors.habitat_structure_id)}>
+                  <InputLabel id="habitat-structure-label">Habitat structure</InputLabel>
+                  <Select
+                    {...field}
+                    labelId="habitat-structure-label"
+                    label="Habitat structure"
+                    renderValue={(value) => listHabitatStructures.find((option) => option.id === Number(value))?.name ?? 'Select habitat structure'}
+                    disabled={isPending}
+                    onChange={(event) => field.onChange(Number(event.target.value))}
+                  >
+                    <MenuItem value={0}>Select habitat structure</MenuItem>
+                    {listHabitatStructures.map((option) => (
+                      <MenuItem key={option.id} value={option.id} sx={{ whiteSpace: 'normal' }}>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.name}</Typography>
+                          {option.description ? <Typography variant="body2" color="text.secondary">{option.description}</Typography> : null}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>
+                    {listHabitatStructures.find((option) => option.id === Number(field.value))?.description ??
+                      'Select the spatial arrangement of habitats. Each option includes its meaning.'}
+                  </FormHelperText>
+                  {errors.habitat_structure_id ? <FormHelperText>{errors.habitat_structure_id.message}</FormHelperText> : null}
+                </FormControl>
+              )}
+            />
+            <Controller
+              control={control}
+              name="is_contact_zone"
+              render={({ field }) => (
+                <FormControl error={Boolean(errors.is_contact_zone)}>
+                  <FormControlLabel
+                    label={`Contact zone: ${field.value ? 'Yes' : 'No'}`}
+                    control={
+                      <Switch
+                        name={field.name}
+                        checked={field.value}
+                        onChange={(_, checked) => field.onChange(checked)}
+                        onBlur={field.onBlur}
+                      />
+                    }
+                  />
+                  <FormHelperText>
+                    {errors.is_contact_zone?.message ??
+                      contactZoneGuidance}
+                  </FormHelperText>
+                </FormControl>
+              )}
+            />
+            <Controller
+                control={control}
                 name="description"
                 render={({ field }) => (
                 <FormControl fullWidth error={Boolean(errors.description)}>
                   <InputLabel>Description</InputLabel>
                   <OutlinedInput {...field} label="Description" type="text" multiline={true} minRows={4}/>
+                  <FormHelperText>{descriptionGuidance}</FormHelperText>
                   {errors.description ? (<FormHelperText>{errors.description.message}</FormHelperText>) : (
-                  <FormHelperText>
-                      Use the description to specify the surveying method used for the sampling area:
-                      <br />
-                      <strong>1. High-precision instrument-based sampling:</strong> When using GPS or a
-                      total station, record the instrument positioning and backsight reference
-                      orientations. This information applies to the sampling area as a whole rather
-                      than to individual organisms. A total station is a surveying instrument used
-                      to precisely measure angles and distances and determine the relative positions
-                      of sampling points.
-                      <br />
-                      <strong>2. Sampling without high-precision instruments:</strong> Describe the
-                      sampling site, total sampling area, and tidal height on the shore.
-                    </FormHelperText>
-                  )}
+                                    <FormHelperText>
+                                        Use the description to specify the surveying method used for the sampling area:
+                                        <br />
+                                        <strong>1. High-precision instrument-based sampling:</strong> When using GPS or a
+                                        total station, record the instrument positioning and backsight reference
+                                        orientations. This information applies to the sampling area as a whole rather
+                                        than to individual organisms. A total station is a surveying instrument used
+                                        to precisely measure angles and distances and determine the relative positions
+                                        of sampling points.
+                                        <br />
+                                        <strong>2. Sampling without high-precision instruments:</strong> Describe the
+                                        sampling site, total sampling area, and tidal height on the shore.
+                                      </FormHelperText>
+                                    )}
                 </FormControl>
                 )}
             />
-            <Controller
-                control={control}
-                name="habitat_id"
-                render={({ field }) => (
-                <FormControl fullWidth error={Boolean(errors.habitat_id)}>
-                  <InputLabel>Habitat</InputLabel>
-                    <Select {...field} value={field.value ?? 0}
-                    onChange={e => field.onChange(Number(e.target.value))} label="Habitat" variant="outlined">
-                    <MenuItem value={0}>Select Habitat</MenuItem>
-                      {listHabitats.map((option) => (
-                        <MenuItem key={option.id} value={option.id}>
-                          {option.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  {errors.habitat_id ? <FormHelperText>{errors.habitat_id.message}</FormHelperText> : null}
-                  {selectedHabitat && selectedHabitat.description && (
-                    <Box sx={{ mt: 1, p: 1.5, bgcolor: 'background.level1', borderRadius: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {selectedHabitat.description}
-                      </Typography>
-                    </Box>
-                  )}
-                </FormControl>
-                )}
-            />
-
             <Controller
                 control={control}
                 name="country_id"
@@ -352,15 +445,64 @@ export function UpdateSamplingAreaForm(): React.JSX.Element {
                 </FormControl>
                 )}
             />
+            <Controller
+              control={control}
+              name="imageFile"
+              render={({ field }) => (
+                <FormControl fullWidth error={Boolean(errors.imageFile)}>
+                  {photoUrl ? (
+                    <Box
+                      component="img"
+                      src={photoUrl}
+                      alt="Sampling area photograph"
+                      sx={{ width: '100%', height: { xs: 300, sm: 420 }, objectFit: 'contain', borderRadius: 1, mb: 1.5 }}
+                    />
+                  ) : null}
+                  {existingPhotoName && !imageFile ? (
+                    <Typography variant="body2" sx={{ mb: 1 }}>Current photograph: {existingPhotoName}</Typography>
+                  ) : null}
+                  <Button component="label" variant="contained" startIcon={<CloudUploadIcon />} disabled={isPending}>
+                    {existingPhotoName ? 'Replace photograph (optional)' : 'Upload image (optional)'}
+                    <VisuallyHiddenInput
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      disabled={isPending}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) setValue('imageFile', file, { shouldValidate: true, shouldDirty: true });
+                        event.target.value = '';
+                      }}
+                    />
+                  </Button>
+                  {imageFile ? (
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 1 }}>
+                      <Typography variant="body2">{imageFile.name} ({Math.round(imageFile.size / 1024)} KB)</Typography>
+                      <Button
+                        size="small"
+                        disabled={isPending}
+                        onClick={() => setValue('imageFile', undefined, { shouldValidate: true, shouldDirty: true })}
+                      >
+                        Cancel replacement
+                      </Button>
+                    </Stack>
+                  ) : null}
+                  <FormHelperText>{photographGuidance}</FormHelperText>
+                  <FormHelperText>{errors.imageFile?.message ?? 'Optional JPG or PNG image, up to 5 MB.'}</FormHelperText>
+                </FormControl>
+              )}
+            />
           </Stack>
           <Stack spacing={3} sx={{ mt: 2 }}>
             {errors.root ? <Alert color="error">{errors.root.message}</Alert> : null}
-            {isSubmitSuccessful ? <Alert color="success">{successMessage}</Alert> : null}
+            {isSubmitSuccessful && successMessage ? <Alert color="success">{successMessage}</Alert> : null}
           </Stack>
         </CardContent>
         <Divider />
         <CardActions sx={{ justifyContent: 'flex-end' }}>
-          <Button type="submit" variant="contained" disabled={isPending}>Update</Button>
+          <Button type="submit" variant="contained" disabled={isPending || !habitatValid}>Update</Button>
         </CardActions>
       </Card>
     </form>

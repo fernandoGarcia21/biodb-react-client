@@ -6,6 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams } from 'next/navigation'
 import {useEffect, useState, useRef} from 'react';
 import Card from '@mui/material/Card';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
+import Box from '@mui/material/Box';
+import Link from '@mui/material/Link';
+import { API } from '@/constants';
+import { contactZoneGuidance } from './sampling-area-guidelines';
 import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
@@ -25,8 +31,11 @@ const schema = zod.object({
   longitude: zod.string().min(3).max(10).or(zod.string().max(0)),
   country_id: zod.string().min(2, { message: 'Country is required' }).max(2),
   country_name: zod.string(),
-  habitat_name: zod.string().optional(),
-  habitat_description: zod.string().optional(),
+  habitat_code: zod.string(),
+  habitat_structure_name: zod.string(),
+  habitat_structure_description: zod.string(),
+  habitat_photo_file_name: zod.string(),
+  is_contact_zone: zod.boolean().nullable(),
   location_id: zod.number().min(1, { message: 'Location is required' }),
   location_name: zod.string(),
 });
@@ -53,8 +62,11 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
       latitude: '',
       country_name: '',
       location_name: '',
-      habitat_name: '',
-      habitat_description: '',
+      habitat_code: '',
+      habitat_structure_name: '',
+      habitat_structure_description: '',
+      habitat_photo_file_name: '',
+      is_contact_zone: null,
     },
    });
 
@@ -81,8 +93,14 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
                       latitude: responseSamplingArea.data[0].latitude,
                       country_name: responseSamplingArea.data[0].country_name,
                       location_name: responseSamplingArea.data[0].location_name,
-                      habitat_name: responseSamplingArea.data[0].habitat_name,
-                      habitat_description: responseSamplingArea.data[0].habitat_description,});
+                      habitat_code: responseSamplingArea.data[0].habitat_code ?? '',
+                      habitat_structure_name: responseSamplingArea.data[0].habitat_structure_name ?? '',
+                      habitat_structure_description: responseSamplingArea.data[0].habitat_structure_description ?? '',
+                      habitat_photo_file_name: responseSamplingArea.data[0].habitat_photo_file_name ?? '',
+                      is_contact_zone: responseSamplingArea.data[0].is_contact_zone === true || responseSamplingArea.data[0].is_contact_zone === 'true'
+                        ? true
+                        : responseSamplingArea.data[0].is_contact_zone === false || responseSamplingArea.data[0].is_contact_zone === 'false' ? false : null,
+              });
 
               document.title = `Display Sampling Area: ${responseSamplingArea.data[0].name} | ${brandTitle}`;
             }
@@ -103,6 +121,13 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
       <Card>
         <Divider />
         <CardContent>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <AlertTitle>Habitat classification guidelines</AlertTitle>
+            Habitat codes describe environmental characteristics, while habitat structure describes their spatial arrangement.
+            {' '}Contact-zone status refers independently to the potential contact between divergent ecotypes.
+            {' '}Sampling area description provides additional information to clarify classifications.
+            {' '}If information is insufficient, consult the responsible person as listed in the Projects page whenever possible.
+          </Alert>
           <Stack spacing={1} sx={{ maxWidth: 'sm' }}>
 
             <Typography variant="subtitle1" sx={{ mt: 1 }}>
@@ -126,9 +151,29 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Description</Typography>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('description')}</Typography>
 
-            <Typography variant="subtitle1" sx={{ mt: 1 }}>Habitat</Typography>
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_name')}</Typography>
-            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_description')}</Typography>
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Habitat code</Typography>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_code') || 'Not available'}</Typography>
+
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Habitat structure</Typography>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_structure_name') || 'Not available'}</Typography>
+            {watch('habitat_structure_description') ? <FormHelperText>{watch('habitat_structure_description')}</FormHelperText> : null}
+
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Contact zone in the SA</Typography>
+            <Typography variant="body1" sx={{ bgcolor: 'grey.100', p: 1 }}>{watch('is_contact_zone') === null ? 'Unknown' : watch('is_contact_zone') ? 'Yes' : 'No'}</Typography>
+            <FormHelperText>{contactZoneGuidance}</FormHelperText>
+
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Photograph</Typography>
+            {watch('habitat_photo_file_name') ? (
+              <Link href={`${API}/sampling_area_images/${encodeURIComponent(watch('habitat_photo_file_name'))}`} target="_blank" rel="noopener noreferrer">
+                <Box
+                  component="img"
+                  src={`${API}/sampling_area_images/${encodeURIComponent(watch('habitat_photo_file_name'))}`}
+                  alt={`Sampling area ${watch('name')}`}
+                  sx={{ display: 'block', width: '100%', height: { xs: 300, sm: 420 }, objectFit: 'contain', borderRadius: 1 }}
+                />
+                View photograph in a new tab
+              </Link>
+            ) : <Typography variant="body1" sx={{ bgcolor: 'grey.100', p: 1 }}>Not available</Typography>}
 
             <Typography variant="subtitle1" sx={{ mt: 1 }}>Country</Typography>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('country_name')}</Typography>

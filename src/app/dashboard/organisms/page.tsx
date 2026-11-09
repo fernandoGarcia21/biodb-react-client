@@ -28,7 +28,7 @@ import { getSpeciesRequest } from '@/api/species';
 import { getAllSamplingAreasLocationsRequest } from '@/api/samplingAreas';
 import { getProjectsRequest, getProjectsMustReadRequest } from '@/api/projects';
 import { getAllTraitPropertiesNoLocation } from '@/api/locationProperties';
-import { getAllHabitatsRequest } from '@/api/habitats';
+import { getHabitatCodesRequest } from '@/api/habitatCodes';
 
 export default function Page(): React.JSX.Element {
   const brandTitle = useBrandTitle();
@@ -39,7 +39,7 @@ export default function Page(): React.JSX.Element {
   const initialSamplingAreaId = searchParams.get('samplingAreaId') ?? '';
   const [organisms, setOrganisms] = useState([]);
   const [listLocations, setListLocations] = useState<string[]>([]);
-  const [listHabitats, setListHabitats] = useState([]);
+  const [listHabitatCodes, setListHabitatCodes] = useState([]);
   const [listSamplingAreas, setListSamplingAreas] = useState([]);
   const [listSpecies, setListSpecies] = useState([]);
   const [listProjects, setListProjects] = useState([]);
@@ -93,9 +93,9 @@ export default function Page(): React.JSX.Element {
           setListSpecies(responseSpecies.data);
           //console.log('Species list:', responseSpecies.data);
 
-          const responseHabitats = await getAllHabitatsRequest();
-          setListHabitats(responseHabitats.data);
-          //console.log('Habitats list:', responseHabitats.data);
+          const responseHabitatCodes = await getHabitatCodesRequest();
+          setListHabitatCodes(responseHabitatCodes.data);
+          //console.log('Habitat codes list:', responseHabitatCodes.data);
 
           const responseSamplingAreas = await getAllSamplingAreasLocationsRequest();
           setListSamplingAreas(responseSamplingAreas.data);
@@ -315,7 +315,7 @@ export default function Page(): React.JSX.Element {
           return selectedOutputProperties.includes(property.property_id) && property.req_project_must_read;
         });
 
-        console.log('Properties that require must read:', propertiesMustRead);
+        //console.log('Properties that require must read:', propertiesMustRead);
 
         if(propertiesMustRead && propertiesMustRead.length > 0){
           //There are properties that require must read, fetch the relevant project info
@@ -437,7 +437,7 @@ export default function Page(): React.JSX.Element {
         </Stack>
         <OrganismsFilters 
           listLocations={listLocations}
-          listHabitats={listHabitats}
+          listHabitatCodes={listHabitatCodes}
           listSamplingAreas={listSamplingAreas}
           listSpecies={listSpecies}
           listProjects={listProjects}
@@ -569,5 +569,4 @@ function getDynamicProperties(rows: Organism[]): string[] {
     )
   ).filter(h => h != null);
 }
-
 

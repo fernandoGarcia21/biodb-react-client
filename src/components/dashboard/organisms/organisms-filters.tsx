@@ -1,7 +1,12 @@
 import * as React from 'react';
+import { HabitatCodeFilter } from './habitat-code-filter';
+import { filterSamplingAreasByHabitat, hasActiveHabitatFilters, reconcileHabitatSamplingAreas } from '@/lib/habitat-codes/filter';
+import type { HabitatDescriptor, HabitatFilterState, HabitatSamplingArea } from '@/lib/habitat-codes/filter';
 import {useState, useEffect} from 'react';
 import Alert from '@mui/material/Alert';
 import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import Box from '@mui/material/Box';
 import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
@@ -78,10 +83,10 @@ type Species = {
 
 interface OrganismsFiltersProps {
   listLocations: string [];
-  listHabitats: any [];
-  listSamplingAreas: any[]; // You may want to define a type for sampling areas as well
+  listHabitatCodes: HabitatDescriptor[];
+  listSamplingAreas: HabitatSamplingArea[];
   listSpecies: Species[];
-  listProjects: any[]; // You may want to define a type for projects as well
+  listProjects: any[];
   listTraitProperties: GroupedTraitProperty [];
   listPropertiesNoGroupped: TraitProperty [];
   listTraitTypes: string [];
@@ -98,8 +103,7 @@ interface OrganismsFiltersProps {
 }
 
 export function OrganismsFilters({
-  listLocations,
-  listHabitats,
+  listHabitatCodes,
   listSamplingAreas,
   listSpecies,
   listProjects,
@@ -114,7 +118,7 @@ export function OrganismsFilters({
 
   const [inputOrganismNameFilter, setInputOrganismNameFilter] = useState<string>('');
   const [inputSelectSpecies, setInputSelectSpecies] = React.useState<string[]>(initialSpeciesId ? [initialSpeciesId] : []);
-  const [inputSelectHabitat, setInputSelectHabitat] = React.useState<string[]>([]);
+  const [habitatFilters, setHabitatFilters] = React.useState<HabitatFilterState>({});
   const [inputSelectLocation, setInputSelectLocation] = React.useState<string[]>(initialLocationId ? [initialLocationId] : []);
   const [inputSelectSamplingArea, setInputSelectSamplingArea] = React.useState<string[]>(initialSamplingAreaId ? [initialSamplingAreaId] : []);
   const [inputSelectProject, setInputSelectProject] = React.useState<string[]>([]);
@@ -144,7 +148,7 @@ export function OrganismsFilters({
       const match = listSamplingAreas.find(
         (sa) => String(sa.sampling_area_id) === String(initialSamplingAreaId)
       );
-      if (match) setInputSelectSamplingArea([match.sampling_area_id]);
+      if (match) setInputSelectSamplingArea([String(match.sampling_area_id)]);
     }
   }, [listSamplingAreas]);
 
@@ -214,20 +218,51 @@ export function OrganismsFilters({
     setFiltersApplied(false);
   };
 
-  const handleChangeHabitat = (event: SelectChangeEvent<typeof inputSelectHabitat>) => {
-    const {
-      target: { value },
-    } = event;
-    setInputSelectHabitat(
-      // On autofill we get a stringified value.
-      typeof value === 'string' ? value.split(',') : value,
-    );
+  const availableSamplingAreas = React.useMemo(
+    () => filterSamplingAreasByHabitat(listSamplingAreas, listHabitatCodes, habitatFilters),
+    [listSamplingAreas, listHabitatCodes, habitatFilters]
+  );
+  const samplingAreasByCountry = React.useMemo(() => {
+    const countries = new Map<string, Map<string, HabitatSamplingArea[]>>();
+    for (const area of availableSamplingAreas) {
+      const country = area.country_name || 'Unknown country';
+      let locations = countries.get(country);
+      if (!locations) {
+        locations = new Map<string, HabitatSamplingArea[]>();
+        countries.set(country, locations);
+      }
+      const areas = locations.get(area.location_name) ?? [];
+      areas.push(area);
+      locations.set(area.location_name, areas);
+    }
+    return [...countries.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([country, locations]) => ({
+      country,
+      locations: [...locations.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([location, areas]) => ({
+        location,
+        areas: [...areas].sort((a, b) => a.sampling_area_name.localeCompare(b.sampling_area_name)),
+      })),
+    }));
+  }, [availableSamplingAreas]);
+  const habitatFiltersActive = hasActiveHabitatFilters(habitatFilters);
+  const matchingSelectedSamplingAreas = React.useMemo(
+    () => inputSelectSamplingArea.filter((id) => availableSamplingAreas.some((area) => String(area.sampling_area_id) === id)),
+    [inputSelectSamplingArea, availableSamplingAreas]
+  );
+  const habitatSelectionRequired = habitatFiltersActive && matchingSelectedSamplingAreas.length === 0;
 
-    setInputSelectSamplingArea(listSamplingAreas.filter(samplingArea => value.includes(samplingArea.habitat_id)).map(samplingArea => samplingArea.sampling_area_id));  
+  // Select all matches, including when data/configuration arrives asynchronously.
+  useEffect(() => {
+    if (!habitatFiltersActive) return;
+    setInputSelectSamplingArea((selected) => reconcileHabitatSamplingAreas(selected, availableSamplingAreas, true));
+    setFiltersApplied(false);
+  }, [availableSamplingAreas, habitatFiltersActive]);
 
+  const handleHabitatFiltersChange = (next: HabitatFilterState): void => {
+    const available = filterSamplingAreasByHabitat(listSamplingAreas, listHabitatCodes, next);
+    setHabitatFilters(next);
+    setInputSelectSamplingArea((selected) => reconcileHabitatSamplingAreas(selected, available, hasActiveHabitatFilters(next)));
     setFiltersApplied(false);
   };
-
 
   const handleChangeSamplingArea = (event: SelectChangeEvent<typeof inputSelectSamplingArea>) => {
     const {
@@ -383,11 +418,13 @@ export function OrganismsFilters({
 
   return (
     <Card sx={{ p: 2 }}>
-      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 400, color: 'primary.main' }}>
-            Construct your organism filters
-        </Typography>
+      <CardHeader
+        title="Construct your organism filters"
+        titleTypographyProps={{ component: 'h2', variant: 'h6', sx: { fontWeight: 700, color: 'text.primary' } }}
+        sx={{ px: 1, pt: 0, pb: 2 }}
+      />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
-      <FormControl sx={{ m: 1, width: 300 }}>
+        <FormControl sx={{ m: 1, width: 300 }}>
           <OutlinedInput
             value={inputOrganismNameFilter}
             fullWidth
@@ -421,65 +458,6 @@ export function OrganismsFilters({
             </Select>
         </FormControl>
         <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel id="habitat-multiple-checkbox-label">Habitat</InputLabel>
-          <Select
-            labelId="habitat-multiple-checkbox-label"
-            id="habitat-multiple-checkbox"
-            multiple
-            value={inputSelectHabitat}
-            onChange={handleChangeHabitat}
-            input={<OutlinedInput label="Habitat" />}
-            renderValue={(selected) => listHabitats.filter(habitat => selected.includes(habitat.id)).map(habitat => habitat.name).join(', ')}
-            MenuProps={MenuProps}
-            >
-              {listHabitats.map((habitat) => (
-                <MenuItem key={habitat.id} value={habitat.id}>
-                  <Checkbox checked={inputSelectHabitat.includes(habitat.id)} />
-                  <ListItemText primary={habitat.name} />
-                </MenuItem>
-              ))}
-            </Select>
-        </FormControl>
-        <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel id="sampling-area-multiple-checkbox-label">Sampling area</InputLabel>
-          <Select
-            labelId="sampling-area-multiple-checkbox-label"
-            id="sampling-area-multiple-checkbox"
-            multiple
-            value={inputSelectSamplingArea}
-            onChange={handleChangeSamplingArea}
-            input={<OutlinedInput label="Sampling area" />}
-            renderValue={(selected) => listSamplingAreas.filter(samplingArea => selected.includes(samplingArea.sampling_area_id)).map(samplingArea => samplingArea.sampling_area_name).join(', ')}
-            MenuProps={MenuProps}
-            >
-
-            {listLocations.map((location) => [
-                <ListSubheader key={location}>{location}</ListSubheader>,
-                    ...listSamplingAreas.filter(samplingArea => samplingArea.location_name == location).map((samplingArea) => (
-                      <MenuItem 
-                        key={samplingArea.sampling_area_id} 
-                        value={samplingArea.sampling_area_id} 
-                        sx={{ pl: 4 }}
-                        disabled={inputSelectHabitat.length > 0 && !inputSelectHabitat.includes(samplingArea.habitat_id)}
-                      >
-                        <Checkbox checked={inputSelectSamplingArea.includes(samplingArea.sampling_area_id)} />
-                        <ListItemText primary={samplingArea.sampling_area_name} />
-                      </MenuItem>
-                    ))
-                ])}
-            </Select>
-        </FormControl>
-        {inputSelectHabitat.length > 0 && listSamplingAreas.filter(samplingArea => inputSelectHabitat.includes(samplingArea.habitat_id)).length === 0 && (
-          <Alert severity="warning" sx={{ m: 1, width: 'auto' }}>
-            No sampling areas were found associated with the chosen habitat(s) so the habitat/sampling area filter is not applicable
-          </Alert>
-        )}
-        {inputSelectHabitat.length > 0 && inputSelectSamplingArea.length === 0 && (
-          <Alert severity="warning" sx={{ m: 1, width: 'auto' }}>
-            If sampling areas are not selected, the habitat/sampling area filter is not applicable
-          </Alert>
-        )}
-        <FormControl sx={{ m: 1, width: 300 }}>
           <InputLabel id="project-multiple-checkbox-label">Project</InputLabel>
           <Select
             labelId="project-multiple-checkbox-label"
@@ -500,182 +478,251 @@ export function OrganismsFilters({
             </Select>
         </FormControl>
       </Stack>
-      {/** Filters based on traits and properties */}
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
-        <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel id="trait-select-label">Trait</InputLabel>
-            <Select labelId="trait-select-label"
-                    id="trait-select" 
-                    value={inputSelectTrait}
-                    label="Trait"
-                    input={<OutlinedInput label="Traits" />}
-                    onChange={handleChangeTrait}
-                    sx={{ color: inputSelectTrait === 0 ? 'text.secondary' : 'text.primary' }}>
+      <Box component="fieldset" aria-labelledby="geography-filters-title" sx={{ m: 1, minWidth: 0, p: { xs: 2, md: 3 }, pt: { xs: 1, md: 2 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Typography id="geography-filters-title" component="legend" variant="subtitle2" sx={{ px: 1, fontWeight: 400 }}>
+          Filters by geography
+        </Typography>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+            <Stack spacing={2} sx={{ width: { xs: '100%', md: '45%' }, maxWidth: { md: 600 }, minWidth: 0, flexShrink: 0 }}>
+              <FormControl fullWidth>
+                <InputLabel id="sampling-area-multiple-checkbox-label">Sampling area</InputLabel>
+                <Select
+                  labelId="sampling-area-multiple-checkbox-label"
+                  id="sampling-area-multiple-checkbox"
+                  multiple
+                  value={habitatFiltersActive ? matchingSelectedSamplingAreas : inputSelectSamplingArea}
+                  onChange={handleChangeSamplingArea}
+                  input={<OutlinedInput label="Sampling area" />}
+                  renderValue={(selected) => listSamplingAreas.filter(samplingArea => selected.includes(String(samplingArea.sampling_area_id))).map(samplingArea => samplingArea.sampling_area_name).join(', ')}
+                  MenuProps={{
+                    ...MenuProps,
+                    PaperProps: {
+                      ...MenuProps.PaperProps,
+                      style: { ...MenuProps.PaperProps.style, width: 600, maxWidth: 'calc(100vw - 32px)' },
+                    },
+                  }}
+                  >
+                  {samplingAreasByCountry.flatMap(({ country, locations }) => [
+                    <ListSubheader key={`country-${country}`} disableSticky sx={{ fontWeight: 700, color: 'text.primary' }}>{country}</ListSubheader>,
+                    ...locations.flatMap(({ location, areas }) => [
+                      <ListSubheader key={`location-${country}-${location}`} disableSticky sx={{ pl: 4, fontWeight: 500 }}>{location}</ListSubheader>,
+                      ...areas.map((samplingArea) => (
+                        <MenuItem
+                          key={samplingArea.sampling_area_id}
+                          value={String(samplingArea.sampling_area_id)}
+                          sx={{ pl: 6 }}
+                        >
+                          <Checkbox checked={inputSelectSamplingArea.includes(String(samplingArea.sampling_area_id))} />
+                          <ListItemText primary={samplingArea.sampling_area_name} sx={{ whiteSpace: 'normal' }} />
+                        </MenuItem>
+                      )),
+                    ]),
+                  ])}
+                </Select>
+              </FormControl>
+              {habitatSelectionRequired ? (
+                <Alert severity="warning">
+                  {availableSamplingAreas.length === 0
+                    ? 'No sampling areas match the habitat filters. Adjust or clear the habitat filters.'
+                    : 'Select at least one matching sampling area to apply the habitat filters.'}
+                </Alert>
+              ) : null}
+            </Stack>
+            <Box sx={{ width: { xs: '100%', md: 'auto' }, flex: 1, minWidth: 0 }}>
+              <HabitatCodeFilter
+                descriptors={listHabitatCodes}
+                value={habitatFilters}
+                onChange={handleHabitatFiltersChange}
+                matchingCount={availableSamplingAreas.length}
+              />
+            </Box>
+          </Stack>
+        </Stack>
+      </Box>
+      <Box component="fieldset" aria-labelledby="traits-properties-filters-title" sx={{ m: 1, minWidth: 0, p: { xs: 2, md: 3 }, pt: { xs: 1, md: 2 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Typography id="traits-properties-filters-title" component="legend" variant="subtitle2" sx={{ px: 1, fontWeight: 400 }}>
+          Filters by traits and properties
+        </Typography>
+        <Stack spacing={2}>
+          {/** Filters based on traits and properties */}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
+            <FormControl sx={{ m: 1, width: 300 }}>
+              <InputLabel id="trait-select-label">Trait</InputLabel>
+                <Select labelId="trait-select-label"
+                        id="trait-select" 
+                        value={inputSelectTrait}
+                        label="Trait"
+                        input={<OutlinedInput label="Traits" />}
+                        onChange={handleChangeTrait}
+                        sx={{ color: inputSelectTrait === 0 ? 'text.secondary' : 'text.primary' }}>
 
-            <MenuItem value={0}>Trait</MenuItem>
-            {listTraitTypes.map((type) => [
-                <ListSubheader key={type}>{type}</ListSubheader>,
-                    ...listTraitProperties.filter(traitProp => traitProp.trait_type_name == type).map((trait) => (
-                      <MenuItem key={trait.trait_id} value={trait.trait_id} sx={{ pl: 4 }}>
-                        {trait.trait_name}
-                      </MenuItem>
-                    ))
-                ])}
+                <MenuItem value={0}>Trait</MenuItem>
+                {listTraitTypes.map((type) => [
+                    <ListSubheader key={type}>{type}</ListSubheader>,
+                        ...listTraitProperties.filter(traitProp => traitProp.trait_type_name == type).map((trait) => (
+                          <MenuItem key={trait.trait_id} value={trait.trait_id} sx={{ pl: 4 }}>
+                            {trait.trait_name}
+                          </MenuItem>
+                        ))
+                    ])}
 
-            </Select>
-        </FormControl>
-
-        <FormControl sx={{ m: 1, width: 300 }}>
-          <InputLabel id="trait_properties-label">Property</InputLabel>
-            <Select labelId="trait_properties-label"
-                    id="trait_properties" 
-                    value={inputSelectProperty}
-                    label="Property"
-                    input={<OutlinedInput label="Properties" />}
-                    onChange={handleChangeProperty}
-                    sx={{ color: inputSelectProperty === 0 ? 'text.secondary' : 'text.primary' }}>
-
-              <MenuItem value={0}>Property</MenuItem>
-              {/** Only show the properties of the selected trait that are not already selected 
-               * 
-               * This code is commented because it is an alternative way to show the properties of the selected trait that are not already selected
-               * {inputSelectTrait && inputSelectTrait > 0 && listTraitProperties.filter(traitProp => traitProp.trait_id == inputSelectTrait)[0].properties.filter(property => !selectedPropertyValues.map(pV => pV.property_id).includes(property.property_id)).map((property) => (
-                <MenuItem key={property.property_id} value={property.property_id}>
-                  {property.property_name}
-                </MenuItem>
-              ))}
-              */}
-              {inputSelectTrait && inputSelectTrait > 0 && listTraitProperties.filter(traitProp => traitProp.trait_id == inputSelectTrait)[0].properties.map((property) => (
-                <MenuItem key={property.property_id} value={property.property_id}>
-                  {property.property_name}
-                </MenuItem>
-              ))}
-            </Select>
-        </FormControl>
-
-        <FormControl sx={{ m: 1, width: 120 }}>
-            <InputLabel>Operation</InputLabel>
-            <Select labelId="operation_properties-label"
-                    id="operation_properties" 
-                    value={inputSelectOperation}
-                    label="Operation"
-                    input={<OutlinedInput label="Operation" />}
-                    onChange={handleChangeOperation}>
-
-              <MenuItem value={''}>Operation</MenuItem>
-              {/** Show the list of operations from the global constant */}
-              {listOperationsProperty.map((operation) => (
-                <MenuItem key={operation.value} value={operation.value}>
-                  {operation.name}
-                </MenuItem>
-              ))}
-            </Select>
-        </FormControl>
-        {/** Show the value component based on the selected operation */}
-        {LIST_QUERY_OPERATIONS.filter(operation => operation.value === inputSelectOperation)[0].showValueComponent && (
-            <FormControl sx={{ m: 1, width: 200 }} error={Boolean(errorPropertyValue)}>
-              {LIST_DATA_TYPES_COMPONENTS.filter(dataType => dataType.id === inputDataType)[0].component === "input" && (
-                          <>
-                            <InputLabel id="value-property-filter">Value</InputLabel>
-                            <OutlinedInput label="Value" 
-                            value={inputPropertyValueFilter}
-                            type="text" 
-                            onChange={handleInputPropertyValueChange}/>
-                          </>
-                        )}
-              {LIST_DATA_TYPES_COMPONENTS.filter(dataType => dataType.id === inputDataType)[0].component === "calendar" && (
-                          <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DemoContainer components={['DatePicker']}>
-                              <DatePicker
-                                label="Value"
-                                value={inputDate}
-                                format={DATE_FORMAT_TEMPLATE}
-                                onChange={(newValue) => { handleInputPropertyDateChange(newValue); }}
-                                slotProps={{
-                                  textField: {
-                                    helperText: DATE_FORMAT_TEMPLATE,
-                                  },
-                                }}
-                              />
-                            </DemoContainer>
-                          </LocalizationProvider>
-                        )}
-              {errorPropertyValue ? <FormHelperText>{errorPropertyValue}</FormHelperText> : null}
+                </Select>
             </FormControl>
-         )}
-        <Button
-          color={inputSelectProperty > 0 && 
-                 inputPropertyValueFilter && 
-                 inputPropertyValueFilter.length > 0 && 
-                 inputSelectOperation && 
-                 inputSelectOperation.length > 0 && 
-                 !errorPropertyValue ? "primary" : "inherit"}
-          variant={inputSelectProperty > 0 && 
-                   inputPropertyValueFilter && 
-                   inputPropertyValueFilter.length > 0 && 
-                   inputSelectOperation && 
-                   inputSelectOperation.length > 0 && 
-                   !errorPropertyValue ? "contained" : "outlined"}
-          startIcon={<AddIcon fontSize="var(--icon-fontSize-md)" />}
-          onClick={handleClickAddProperty}
-          sx={{
-            ...(inputSelectProperty > 0 && 
-                inputPropertyValueFilter && 
-                inputPropertyValueFilter.length > 0 && 
-                inputSelectOperation && 
-                inputSelectOperation.length > 0 && 
-                !errorPropertyValue && {
-              animation: 'pulse 2s ease-in-out infinite',
-              '@keyframes pulse': {
-                '0%, 100%': {
-                  transform: 'scale(1)',
-                  boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.7)',
-                },
-                '50%': {
-                  transform: 'scale(1.05)',
-                  boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)',
-                },
-              },
-            }),
-          }}
-        >
-          Add
-        </Button>
-      </Stack>
 
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
-        {selectedPropertyValues.map((property) => (
+            <FormControl sx={{ m: 1, width: 300 }}>
+              <InputLabel id="trait_properties-label">Property</InputLabel>
+                <Select labelId="trait_properties-label"
+                        id="trait_properties" 
+                        value={inputSelectProperty}
+                        label="Property"
+                        input={<OutlinedInput label="Properties" />}
+                        onChange={handleChangeProperty}
+                        sx={{ color: inputSelectProperty === 0 ? 'text.secondary' : 'text.primary' }}>
 
-            <Chip
-            key={property.key}
-            label={`${property.property_name} ${property.operation_symbol} ${property.value}`}
-            variant="outlined"
-            onDelete={handleDeleteChosenProperty(property.key)}
-            />
+                  <MenuItem value={0}>Property</MenuItem>
+                  {/** Only show the properties of the selected trait that are not already selected 
+                   * 
+                   * This code is commented because it is an alternative way to show the properties of the selected trait that are not already selected
+                   * {inputSelectTrait && inputSelectTrait > 0 && listTraitProperties.filter(traitProp => traitProp.trait_id == inputSelectTrait)[0].properties.filter(property => !selectedPropertyValues.map(pV => pV.property_id).includes(property.property_id)).map((property) => (
+                    <MenuItem key={property.property_id} value={property.property_id}>
+                      {property.property_name}
+                    </MenuItem>
+                  ))}
+                  */}
+                  {inputSelectTrait && inputSelectTrait > 0 && listTraitProperties.filter(traitProp => traitProp.trait_id == inputSelectTrait)[0].properties.map((property) => (
+                    <MenuItem key={property.property_id} value={property.property_id}>
+                      {property.property_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+            </FormControl>
 
-        ))}
-        {/** Show the condition to join the properties in the query only if there is more than one property selected */}
-        {selectedPropertyValues.length > 1 && 
-          <FormControl sx={{ m: 1, width: 100 }}>
-              <InputLabel>Condition</InputLabel>
-              <Select labelId="condition_properties-label"
-                      id="condition_properties" 
-                      value={inputSelectCondition}
-                      label="Condition"
-                      input={<OutlinedInput label="Condition" />}
-                      onChange={handleChangeCondition}>
+            <FormControl sx={{ m: 1, width: 120 }}>
+                <InputLabel>Operation</InputLabel>
+                <Select labelId="operation_properties-label"
+                        id="operation_properties" 
+                        value={inputSelectOperation}
+                        label="Operation"
+                        input={<OutlinedInput label="Operation" />}
+                        onChange={handleChangeOperation}>
 
-                {/** Show the list of conditions to join the properties in the query */}
-                {LIST_CONDITIONS_QUERY.map((condition) => (
-                  <MenuItem key={condition.value} value={condition.value}>
-                    {condition.name}
-                  </MenuItem>
-                ))}
-              </Select>
-          </FormControl>
-        }
-      </Stack>
-      
+                  <MenuItem value={''}>Operation</MenuItem>
+                  {/** Show the list of operations from the global constant */}
+                  {listOperationsProperty.map((operation) => (
+                    <MenuItem key={operation.value} value={operation.value}>
+                      {operation.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+            </FormControl>
+            {/** Show the value component based on the selected operation */}
+            {LIST_QUERY_OPERATIONS.filter(operation => operation.value === inputSelectOperation)[0].showValueComponent && (
+                <FormControl sx={{ m: 1, width: 200 }} error={Boolean(errorPropertyValue)}>
+                  {LIST_DATA_TYPES_COMPONENTS.filter(dataType => dataType.id === inputDataType)[0].component === "input" && (
+                              <>
+                                <InputLabel id="value-property-filter">Value</InputLabel>
+                                <OutlinedInput label="Value" 
+                                value={inputPropertyValueFilter}
+                                type="text" 
+                                onChange={handleInputPropertyValueChange}/>
+                              </>
+                            )}
+                  {LIST_DATA_TYPES_COMPONENTS.filter(dataType => dataType.id === inputDataType)[0].component === "calendar" && (
+                              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DemoContainer components={['DatePicker']}>
+                                  <DatePicker
+                                    label="Value"
+                                    value={inputDate}
+                                    format={DATE_FORMAT_TEMPLATE}
+                                    onChange={(newValue) => { handleInputPropertyDateChange(newValue); }}
+                                    slotProps={{
+                                      textField: {
+                                        helperText: DATE_FORMAT_TEMPLATE,
+                                      },
+                                    }}
+                                  />
+                                </DemoContainer>
+                              </LocalizationProvider>
+                            )}
+                  {errorPropertyValue ? <FormHelperText>{errorPropertyValue}</FormHelperText> : null}
+                </FormControl>
+             )}
+            <Button
+              color={inputSelectProperty > 0 && 
+                     inputPropertyValueFilter && 
+                     inputPropertyValueFilter.length > 0 && 
+                     inputSelectOperation && 
+                     inputSelectOperation.length > 0 && 
+                     !errorPropertyValue ? "primary" : "inherit"}
+              variant={inputSelectProperty > 0 && 
+                       inputPropertyValueFilter && 
+                       inputPropertyValueFilter.length > 0 && 
+                       inputSelectOperation && 
+                       inputSelectOperation.length > 0 && 
+                       !errorPropertyValue ? "contained" : "outlined"}
+              startIcon={<AddIcon fontSize="var(--icon-fontSize-md)" />}
+              onClick={handleClickAddProperty}
+              sx={{
+                ...(inputSelectProperty > 0 && 
+                    inputPropertyValueFilter && 
+                    inputPropertyValueFilter.length > 0 && 
+                    inputSelectOperation && 
+                    inputSelectOperation.length > 0 && 
+                    !errorPropertyValue && {
+                  animation: 'pulse 2s ease-in-out infinite',
+                  '@keyframes pulse': {
+                    '0%, 100%': {
+                      transform: 'scale(1)',
+                      boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.7)',
+                    },
+                    '50%': {
+                      transform: 'scale(1.05)',
+                      boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)',
+                    },
+                  },
+                }),
+              }}
+            >
+              Add
+            </Button>
+          </Stack>
+
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
+            {selectedPropertyValues.map((property) => (
+
+                <Chip
+                key={property.key}
+                label={`${property.property_name} ${property.operation_symbol} ${property.value}`}
+                variant="outlined"
+                onDelete={handleDeleteChosenProperty(property.key)}
+                />
+
+            ))}
+            {/** Show the condition to join the properties in the query only if there is more than one property selected */}
+            {selectedPropertyValues.length > 1 && 
+              <FormControl sx={{ m: 1, width: 100 }}>
+                  <InputLabel>Condition</InputLabel>
+                  <Select labelId="condition_properties-label"
+                          id="condition_properties" 
+                          value={inputSelectCondition}
+                          label="Condition"
+                          input={<OutlinedInput label="Condition" />}
+                          onChange={handleChangeCondition}>
+
+                    {/** Show the list of conditions to join the properties in the query */}
+                    {LIST_CONDITIONS_QUERY.map((condition) => (
+                      <MenuItem key={condition.value} value={condition.value}>
+                        {condition.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+              </FormControl>
+            }
+          </Stack>
+        </Stack>
+      </Box>
+
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap', mt: 2 }}>
       {/** Show the list of columns to include in the output */}
         <FormControl fullWidth >
@@ -712,11 +759,13 @@ export function OrganismsFilters({
         <Button
           color={!filtersApplied ? "primary" : "inherit"}
           variant='contained'
+          disabled={habitatSelectionRequired}
           onClick={() => {
+            if (habitatSelectionRequired) return;
             setFiltersApplied(true);
             handleFilterClick(inputOrganismNameFilter, 
                              inputSelectSpecies, 
-                             inputSelectSamplingArea,
+                             habitatFiltersActive ? matchingSelectedSamplingAreas : inputSelectSamplingArea,
                              inputSelectProject,
                              selectedPropertyValues,
                              inputSelectCondition,
