@@ -15,6 +15,13 @@ import Stack from '@mui/material/Stack';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
+import FormGroup from '@mui/material/FormGroup';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import FormLabel from '@mui/material/FormLabel';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import FormHelperText from '@mui/material/FormHelperText';
 import ListItemText from '@mui/material/ListItemText';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -118,6 +125,8 @@ export function OrganismsFilters({
 
   const [inputOrganismNameFilter, setInputOrganismNameFilter] = useState<string>('');
   const [inputSelectSpecies, setInputSelectSpecies] = React.useState<string[]>(initialSpeciesId ? [initialSpeciesId] : []);
+  const [structureIds, setStructureIds] = React.useState<string[]>([]);
+  const [contactZone, setContactZone] = React.useState<'' | 'true' | 'false'>('');
   const [habitatFilters, setHabitatFilters] = React.useState<HabitatFilterState>({});
   const [inputSelectLocation, setInputSelectLocation] = React.useState<string[]>(initialLocationId ? [initialLocationId] : []);
   const [inputSelectSamplingArea, setInputSelectSamplingArea] = React.useState<string[]>(initialSamplingAreaId ? [initialSamplingAreaId] : []);
@@ -219,8 +228,8 @@ export function OrganismsFilters({
   };
 
   const availableSamplingAreas = React.useMemo(
-    () => filterSamplingAreasByHabitat(listSamplingAreas, listHabitatCodes, habitatFilters),
-    [listSamplingAreas, listHabitatCodes, habitatFilters]
+    () => filterSamplingAreasByHabitat(listSamplingAreas, listHabitatCodes, habitatFilters, structureIds, contactZone),
+    [listSamplingAreas, listHabitatCodes, habitatFilters, structureIds, contactZone]
   );
   const samplingAreasByCountry = React.useMemo(() => {
     const countries = new Map<string, Map<string, HabitatSamplingArea[]>>();
@@ -243,7 +252,16 @@ export function OrganismsFilters({
       })),
     }));
   }, [availableSamplingAreas]);
-  const habitatFiltersActive = hasActiveHabitatFilters(habitatFilters);
+  const habitatStructures = React.useMemo(() => {
+    const structures = new Map<string, string>();
+    for (const area of listSamplingAreas) {
+      if (area.habitat_structure_id != null) {
+        structures.set(String(area.habitat_structure_id), area.habitat_structure_name || `Structure ${area.habitat_structure_id}`);
+      }
+    }
+    return [...structures].sort(([, a], [, b]) => a.localeCompare(b));
+  }, [listSamplingAreas]);
+  const habitatFiltersActive = hasActiveHabitatFilters(habitatFilters) || structureIds.length > 0 || contactZone !== '';
   const matchingSelectedSamplingAreas = React.useMemo(
     () => inputSelectSamplingArea.filter((id) => availableSamplingAreas.some((area) => String(area.sampling_area_id) === id)),
     [inputSelectSamplingArea, availableSamplingAreas]
@@ -258,9 +276,7 @@ export function OrganismsFilters({
   }, [availableSamplingAreas, habitatFiltersActive]);
 
   const handleHabitatFiltersChange = (next: HabitatFilterState): void => {
-    const available = filterSamplingAreasByHabitat(listSamplingAreas, listHabitatCodes, next);
     setHabitatFilters(next);
-    setInputSelectSamplingArea((selected) => reconcileHabitatSamplingAreas(selected, available, hasActiveHabitatFilters(next)));
     setFiltersApplied(false);
   };
 
@@ -484,7 +500,7 @@ export function OrganismsFilters({
         </Typography>
         <Stack spacing={2}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
-            <Stack spacing={2} sx={{ width: { xs: '100%', md: '45%' }, maxWidth: { md: 600 }, minWidth: 0, flexShrink: 0 }}>
+            <Stack spacing={2} sx={{ width: { xs: '100%', md: 'auto' }, flex: { md: 2 }, minWidth: 0 }}>
               <FormControl fullWidth>
                 <InputLabel id="sampling-area-multiple-checkbox-label">Sampling area</InputLabel>
                 <Select
@@ -499,7 +515,7 @@ export function OrganismsFilters({
                     ...MenuProps,
                     PaperProps: {
                       ...MenuProps.PaperProps,
-                      style: { ...MenuProps.PaperProps.style, width: 600, maxWidth: 'calc(100vw - 32px)' },
+                      style: { ...MenuProps.PaperProps.style, width: 480, maxWidth: 'calc(100vw - 32px)' },
                     },
                   }}
                   >
@@ -524,20 +540,67 @@ export function OrganismsFilters({
               {habitatSelectionRequired ? (
                 <Alert severity="warning">
                   {availableSamplingAreas.length === 0
-                    ? 'No sampling areas match the habitat filters. Adjust or clear the habitat filters.'
-                    : 'Select at least one matching sampling area to apply the habitat filters.'}
+                    ? 'No sampling areas match the habitat or contact-zone filters. Adjust or clear these filters.'
+                    : 'Select at least one matching sampling area to apply these filters.'}
                 </Alert>
               ) : null}
             </Stack>
-            <Box sx={{ width: { xs: '100%', md: 'auto' }, flex: 1, minWidth: 0 }}>
+            <FormControl component="fieldset" sx={{ width: { xs: '100%', md: 'auto' }, flex: { md: 1 }, minWidth: 0 }}>
+              <FormLabel component="legend" id="contact-zone-filter-label">Contact zone in the sampling area?</FormLabel>
+              <RadioGroup
+                row
+                aria-labelledby="contact-zone-filter-label"
+                name="contact-zone-filter"
+                value={contactZone}
+                onChange={(event) => {
+                  setContactZone(event.target.value as '' | 'true' | 'false');
+                  setFiltersApplied(false);
+                }}
+              >
+                <FormControlLabel value="" control={<Radio />} label="Any" />
+                <FormControlLabel value="true" control={<Radio />} label="Yes" />
+                <FormControlLabel value="false" control={<Radio />} label="No" />
+              </RadioGroup>
+            </FormControl>
+          </Stack>
+            <Box sx={{ width: '100%', minWidth: 0 }}>
               <HabitatCodeFilter
                 descriptors={listHabitatCodes}
                 value={habitatFilters}
                 onChange={handleHabitatFiltersChange}
                 matchingCount={availableSamplingAreas.length}
-              />
+                additionalActiveCount={structureIds.length ? 1 : 0}
+                onClear={() => { setStructureIds([]); setFiltersApplied(false); }}
+              >
+                <FormControl component="fieldset" aria-labelledby="habitat-structure-filter-label" sx={{ minWidth: 0 }}>
+                  <Stack spacing={1}>
+                    <Typography id="habitat-structure-filter-label" variant="subtitle2" sx={{ fontWeight: 600 }}>Habitat structure</Typography>
+                    <ToggleButtonGroup exclusive size="small" sx={{ '& .MuiToggleButton-root': { fontSize: '0.6875rem' } }} value="ANY" aria-label="Matching mode for habitat structure">
+                      <ToggleButton value="ANY">ANY selected</ToggleButton>
+                    </ToggleButtonGroup>
+                    <FormGroup aria-labelledby="habitat-structure-filter-label">
+                      {habitatStructures.map(([id, name]) => (
+                        <FormControlLabel
+                          key={id}
+                          label={name}
+                          sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.8125rem' } }}
+                          control={
+                            <Checkbox
+                              checked={structureIds.includes(id)}
+                              onChange={(_, checked) => {
+                                setStructureIds((selected) => checked ? [...selected, id] : selected.filter((value) => value !== id));
+                                setFiltersApplied(false);
+                              }}
+                            />
+                          }
+                        />
+                      ))}
+                    </FormGroup>
+                    <FormHelperText>Matches any selected structure. Leave empty to include all structures.</FormHelperText>
+                  </Stack>
+                </FormControl>
+              </HabitatCodeFilter>
             </Box>
-          </Stack>
         </Stack>
       </Box>
       <Box component="fieldset" aria-labelledby="traits-properties-filters-title" sx={{ m: 1, minWidth: 0, p: { xs: 2, md: 3 }, pt: { xs: 1, md: 2 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>

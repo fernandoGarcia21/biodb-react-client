@@ -76,3 +76,22 @@ void test('changing habitat filters updates available sampling areas and clearin
   assert.deepEqual(filterSamplingAreasByHabitat(areas, descriptors, {}), areas);
   assert.deepEqual(reconcileHabitatSamplingAreas(['3'], areas, false), ['3']);
 });
+
+void test('structure and contact-zone filters combine with habitat codes', () => {
+  const structured = areas.map((area, index) => ({
+    ...area,
+    habitat_structure_id: index === 0 ? 1 : 2,
+    is_contact_zone: index === 2,
+  }));
+  assert.deepEqual(ids(filterSamplingAreasByHabitat(structured, descriptors, {}, ['1', '2'])), [1, 2, 3, 4, 5]);
+  assert.deepEqual(ids(filterSamplingAreasByHabitat(structured, descriptors, filters(['R']), ['2'], 'true')), [3]);
+  assert.deepEqual(ids(filterSamplingAreasByHabitat(structured, descriptors, filters(['R']), ['1'], 'true')), []);
+});
+
+void test('contact-zone filtering accepts booleans and strings without treating unknown as No', () => {
+  const values = [true, false, 'true', 'false', '', null] as const;
+  const contacts = values.map((is_contact_zone, index) => ({ sampling_area_id: index + 1, is_contact_zone }));
+  assert.deepEqual(ids(filterSamplingAreasByHabitat(contacts, [], {}, [], 'true')), [1, 3]);
+  assert.deepEqual(ids(filterSamplingAreasByHabitat(contacts, [], {}, [], 'false')), [2, 4]);
+  assert.deepEqual(ids(filterSamplingAreasByHabitat(contacts, [], {})), [1, 2, 3, 4, 5, 6]);
+});

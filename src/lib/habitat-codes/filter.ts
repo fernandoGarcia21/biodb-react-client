@@ -26,6 +26,9 @@ export interface HabitatSamplingArea {
   location_name: string;
   country_name?: string | null;
   habitat_code?: string | null;
+  habitat_structure_id?: number | null;
+  habitat_structure_name?: string | null;
+  is_contact_zone?: boolean | 'true' | 'false' | '' | null;
 }
 
 export function hasActiveHabitatFilters(filters: HabitatFilterState): boolean {
@@ -71,12 +74,21 @@ export function matchesHabitatFilters(
   });
 }
 
-export function filterSamplingAreasByHabitat<T extends { habitat_code?: string | null }>(
+export function filterSamplingAreasByHabitat<T extends Pick<HabitatSamplingArea, 'habitat_code' | 'habitat_structure_id' | 'is_contact_zone'>>(
   samplingAreas: T[],
   descriptors: HabitatDescriptor[],
-  filters: HabitatFilterState
+  filters: HabitatFilterState,
+  structureIds: string[] = [],
+  contactZone: '' | 'true' | 'false' = ''
 ): T[] {
-  return samplingAreas.filter((area) => matchesHabitatFilters(area.habitat_code, descriptors, filters));
+  return samplingAreas.filter((area) => {
+    const contact = area.is_contact_zone === true || area.is_contact_zone === 'true'
+      ? 'true'
+      : area.is_contact_zone === false || area.is_contact_zone === 'false' ? 'false' : '';
+    return matchesHabitatFilters(area.habitat_code, descriptors, filters) &&
+      (!structureIds.length || (area.habitat_structure_id != null && structureIds.includes(String(area.habitat_structure_id)))) &&
+      (!contactZone || contact === contactZone);
+  });
 }
 
 /** Select every match for active habitat filters; preserve selections when clearing. */
