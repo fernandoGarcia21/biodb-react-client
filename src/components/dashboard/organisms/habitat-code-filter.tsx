@@ -43,7 +43,7 @@ export function HabitatCodeFilter({ descriptors, value, onChange, matchingCount,
   return (
     <Box sx={{ minWidth: 0 }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button type="button" aria-expanded={expanded} aria-controls={`${id}-panel`} onClick={() => { setExpanded((open) => !open); }} endIcon={expanded ? <ExpandLess /> : <ExpandMore />}>
+        <Button type="button" variant="outlined" sx={{ bgcolor: '#e3f2fd', color: '#1565c0', borderColor: '#90caf9', '&:hover': { bgcolor: '#bbdefb', borderColor: '#64b5f6' } }} aria-expanded={expanded} aria-controls={`${id}-panel`} onClick={() => { setExpanded((open) => !open); }} endIcon={expanded ? <ExpandLess /> : <ExpandMore />}>
           Filter sampling areas by habitat{activeCount ? ` (${activeCount} active)` : ''}
         </Button>
         {matchingCount !== undefined ? <Typography variant="body2" color="text.secondary" role="status">{matchingCount} matching sampling areas</Typography> : null}
@@ -86,3 +86,4 @@ export function HabitatCodeFilter({ descriptors, value, onChange, matchingCount,
     </Box>
   );
 }
+
