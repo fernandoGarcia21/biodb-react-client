@@ -17,6 +17,7 @@ import { Download as DownloadIcon } from '@phosphor-icons/react/dist/ssr/Downloa
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 import { OrganismsFilters } from '@/components/dashboard/organisms/organisms-filters';
+import { SamplingAreaListGuidelines } from '@/components/dashboard/sampling_areas/sampling-area-list-guidelines';
 import { OrganismsTable } from '@/components/dashboard/organisms/organisms-table';
 import type { Organism } from '@/components/dashboard/organisms/organisms-table';
 import { styled } from '@mui/material/styles';
@@ -459,6 +460,7 @@ export default function Page(): React.JSX.Element {
             Use the filters above to refine your query and display additional individuals. If you need to access more than {totalAllowed} individuals, consider exporting the full dataset.
           </Alert>
         )}
+        <SamplingAreaListGuidelines defaultExpanded={false} />
         <OrganismsTable
           count={organisms.length}
           page={page}

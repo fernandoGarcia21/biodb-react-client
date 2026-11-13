@@ -194,6 +194,32 @@ export default function Page(): React.JSX.Element {
             </div>
           )}
         </Stack>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <p>
+            <strong>Sampling area</strong> is the finest geographical unit, representing a specific shore segment, 
+            <strong> typically around 100 m in length</strong>, delimited by precise geospatial boundaries.
+            The <strong>Id</strong> column in the table below is the consecutive number
+            assigned automatically by the system when a sampling area is created. Use this
+            number to associate an organism with a sampling area during organism batch processing.
+            In the CSV template column <strong>SAMPLING AREA</strong>, only one sampling area
+            identifier can be associated with an individual and this is <strong>required </strong>
+            at the time of organism creation.
+          </p>
+          <p>
+            <strong>Description</strong> provides additional information about the sampling area and the sampling procedure, 
+            such as the approximate extent of the sampled area, shore level or tidal height, 
+            identifiable landmarks, and whether high-precision instruments 
+            (e.g., high-precision GPS or a total station) were used.
+            <br></br>
+            If individual organisms were positioned using a total station, 
+            describe the instrument location, reference orientation (backsight), 
+            and any other information needed to interpret their local coordinates (X, Y, Z), 
+            which are recorded separately under the <strong><em>Local coordinates</em></strong> trait.
+          </p>
+          <p>
+            <strong>Latitude and longitude</strong> in decimal degrees, using WGS84 (EPSG:4326).
+          </p>
+        </Alert>
         <SamplingAreaListGuidelines />
         <SamplingAreasFilters value={searchText} onChange={handleSearchChange} />
         <SamplingAreasTable
