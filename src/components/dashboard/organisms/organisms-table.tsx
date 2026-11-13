@@ -218,7 +218,7 @@ export function OrganismsTable({
               <TableCell>Sampling area</TableCell>
               <TableCell>Habitat</TableCell>
               <TableCell>Habitat structure</TableCell>
-              <TableCell>Contact zone in the SA</TableCell>
+              <TableCell>SA in a contact zone</TableCell>
               {/* Add headers for dynamic properties */}
               {flatHeaders.length > 0 && flatHeaders.map((key) => (
                 <TableCell key={key}>{key}</TableCell>

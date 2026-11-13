@@ -546,7 +546,7 @@ export function OrganismsFilters({
               ) : null}
             </Stack>
             <FormControl component="fieldset" sx={{ width: { xs: '100%', md: 'auto' }, flex: { md: 1 }, minWidth: 0 }}>
-              <FormLabel component="legend" id="contact-zone-filter-label">Contact zone in the sampling area?</FormLabel>
+              <FormLabel component="legend" id="contact-zone-filter-label">Sampling area lies in a contact zone?</FormLabel>
               <RadioGroup
                 row
                 aria-labelledby="contact-zone-filter-label"

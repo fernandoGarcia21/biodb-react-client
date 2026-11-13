@@ -6,6 +6,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import Alert from '@mui/material/Alert';
+import { darken, lighten } from '@mui/material/styles';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
@@ -15,7 +16,7 @@ import type { HabitatCodesResponse } from './habitat-code-selector';
 import { SamplingAreaGuidelines, contactZoneGuidance, descriptionGuidance, photographGuidance } from './sampling-area-guidelines';
 import { paths } from '@/paths';
 
-export function SamplingAreaListGuidelines({ children }: { children: React.ReactNode }): React.JSX.Element {
+export function SamplingAreaListGuidelines(): React.JSX.Element {
   const [descriptors, setDescriptors] = React.useState<HabitatCodesResponse>([]);
   const [structures, setStructures] = React.useState<{ id: number; name: string; description?: string | null }[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -42,12 +43,48 @@ export function SamplingAreaListGuidelines({ children }: { children: React.React
 
   return (
     <Accordion defaultExpanded>
-      <AccordionSummary expandIcon={<ExpandMore />} id="sampling-area-guidelines-header" aria-controls="sampling-area-guidelines-content">
+      <AccordionSummary expandIcon={<ExpandMore />} id="sampling-area-guidelines-header" aria-controls="sampling-area-guidelines-content"
+        sx={(theme) => {
+          const light = theme.palette.mode === 'light';
+          const background = (light ? lighten : darken)(theme.palette.info.light, 0.9);
+          return {
+            bgcolor: background,
+            color: (light ? darken : lighten)(theme.palette.info.light, 0.6),
+            '&:hover': { bgcolor: background },
+            '& .MuiAccordionSummary-expandIconWrapper': { color: 'inherit' },
+          };
+        }}
+      >
         <Typography variant="h6">Sampling area and habitat classification guidelines</Typography>
       </AccordionSummary>
       <AccordionDetails id="sampling-area-guidelines-content">
         <Stack spacing={2}>
-          {children}
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <p>
+              <strong>Sampling area</strong> is the finest geographical unit, representing a specific shore segment, 
+              <strong> typically around 100 m in length</strong>, delimited by precise geospatial boundaries.
+              The <strong>Id</strong> column in the table below is the consecutive number
+              assigned automatically by the system when a sampling area is created. Use this
+              number to associate an organism with a sampling area during organism batch processing.
+              In the CSV template column <strong>SAMPLING AREA</strong>, only one sampling area
+              identifier can be associated with an individual and this is <strong>required </strong>
+              at the time of organism creation.
+            </p>
+            <p>
+              <strong>Description</strong> provides additional information about the sampling area and the sampling procedure, 
+              such as the approximate extent of the sampled area, shore level or tidal height, 
+              identifiable landmarks, and whether high-precision instruments 
+              (e.g., high-precision GPS or a total station) were used.
+              <br></br>
+              If individual organisms were positioned using a total station, 
+              describe the instrument location, reference orientation (backsight), 
+              and any other information needed to interpret their local coordinates (X, Y, Z), 
+              which are recorded separately under the <strong><em>Local coordinates</em></strong> trait.
+            </p>
+            <p>
+              <strong>Latitude and longitude</strong> in decimal degrees, using WGS84 (EPSG:4326).
+            </p>
+          </Alert>
           <SamplingAreaGuidelines />
           
           <Typography variant="subtitle1">Habitat codes</Typography>
@@ -84,7 +121,7 @@ export function SamplingAreaListGuidelines({ children }: { children: React.React
               </Box>
             ))}
           </Box>
-          <Typography variant="subtitle1">Contact zone in the SA</Typography>
+          <Typography variant="subtitle1">SA in a contact zone</Typography>
           <Typography variant="body2">{contactZoneGuidance}</Typography>
           <Typography variant="subtitle1">Photograph</Typography>
           <Typography variant="body2">{photographGuidance}</Typography>

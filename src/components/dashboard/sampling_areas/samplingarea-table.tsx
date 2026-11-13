@@ -38,7 +38,7 @@ export interface SamplingArea {
   habitat_code?: string;
   habitat_structure_name?: string;
   habitat_photo_file_name?: string;
-  is_contact_zone?: boolean;
+  is_contact_zone?: boolean | 'true' | 'false' | '' | null;
 }
 
 interface SamplingAreasTableProps {
@@ -264,7 +264,7 @@ export function SamplingAreasTable({
                 { key: 'longitude', label: 'Longitude' },
                 { key: 'habitat_code', label: 'Habitat code' },
                 { key: 'habitat_structure_name', label: 'Habitat structure' },
-                { key: 'is_contact_zone', label: 'Contact zone in the SA' },
+                { key: 'is_contact_zone', label: 'SA in a contact zone' },
                 { key: 'habitat_photo_file_name', label: 'Habitat photo' },
                 { key: 'description', label: 'Description' },
               ] satisfies { key: keyof SamplingArea; label: string }[]).map((column) => (
@@ -321,7 +321,7 @@ export function SamplingAreasTable({
                   <TableCell>{row.longitude}</TableCell>
                   <TableCell>{row.habitat_code}</TableCell>
                   <TableCell>{row.habitat_structure_name}</TableCell>
-                  <TableCell>{row.is_contact_zone ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{row.is_contact_zone === true || row.is_contact_zone === 'true' ? 'Yes' : row.is_contact_zone === false || row.is_contact_zone === 'false' ? 'No' : '-'}</TableCell>
                   <TableCell>
                     {row.habitat_photo_file_name ? (
                       <Link
