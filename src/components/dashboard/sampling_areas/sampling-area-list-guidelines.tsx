@@ -99,7 +99,7 @@ export function SamplingAreaListGuidelines({ defaultExpanded = true }: { default
               </Box>
             ))}
           </Box>
-          <Typography variant="subtitle1">SA in a contact zone</Typography>
+          <Typography variant="subtitle1">SA contains a contact zone</Typography>
           <Typography variant="body2">{contactZoneGuidance}</Typography>
           <Typography variant="subtitle1">Photograph</Typography>
           <Typography variant="body2">{photographGuidance}</Typography>
@@ -108,3 +108,4 @@ export function SamplingAreaListGuidelines({ defaultExpanded = true }: { default
     </Accordion>
   );
 }
+

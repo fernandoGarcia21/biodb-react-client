@@ -158,7 +158,7 @@ export function DisplaySamplingAreaForm(): React.JSX.Element {
             <Typography variant="body1" sx={{ whiteSpace: 'pre-line', bgcolor: 'grey.100', p: 1 }}>{watch('habitat_structure_name') || 'Not available'}</Typography>
             {watch('habitat_structure_description') ? <FormHelperText>{watch('habitat_structure_description')}</FormHelperText> : null}
 
-            <Typography variant="subtitle1" sx={{ mt: 1 }}>Contact zone in the SA</Typography>
+            <Typography variant="subtitle1" sx={{ mt: 1 }}>Sampling area contains a contact zone</Typography>
             <Typography variant="body1" sx={{ bgcolor: 'grey.100', p: 1 }}>{watch('is_contact_zone') === null ? 'Unknown' : watch('is_contact_zone') ? 'Yes' : 'No'}</Typography>
             <FormHelperText>{contactZoneGuidance}</FormHelperText>
 

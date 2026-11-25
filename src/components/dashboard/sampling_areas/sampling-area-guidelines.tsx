@@ -3,7 +3,7 @@ import AlertTitle from '@mui/material/AlertTitle';
 import { paths } from '@/paths';
 import Link from '@mui/material/Link';
 
-export const contactZoneGuidance = 'Indicates whether the sampling area lies within a contact zone between divergent ecotypes, where individuals of different ecotypes may meet and potentially interbreed. This classification is independent of habitat characteristics and habitat structure. The presence of distinct habitat patches or environmental transitions does not necessarily indicate an ecotype contact zone.';
+export const contactZoneGuidance = 'Indicates whether the sampling area encompasses a contact zone between divergent ecotypes, as evidenced by the spatial distribution of different ecotypes within its boundaries. This flag is set to Yes only when the sampling area spans such a contact zone, rather than being located within or adjacent to one. This classification is independent of habitat characteristics and habitat structure and is most likely to apply to long transects. The presence of distinct habitat patches or environmental transitions does not necessarily indicate an ecotype contact zone.';
 
 export const descriptionGuidance = 'The field description of the sampling area should includ additional information bout the spatial arrangement of habitat types, the nature of any transitions or boundaries, and relevant environmental variation. This information should help clarify potential ambiguities in the habitat code and habitat structure classification.';
 

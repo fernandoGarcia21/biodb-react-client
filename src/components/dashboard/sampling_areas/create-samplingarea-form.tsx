@@ -336,7 +336,7 @@ export function CreateSamplingAreaForm(): React.JSX.Element {
               render={({ field }) => (
                 <FormControl error={Boolean(errors.is_contact_zone)}>
                   <FormControlLabel
-                    label={`Contact zone: ${field.value ? 'Yes' : 'No'}`}
+                    label={`Sampling area contains a contact zone: ${field.value ? 'Yes' : 'No'}`}
                     control={
                       <Switch
                         name={field.name}

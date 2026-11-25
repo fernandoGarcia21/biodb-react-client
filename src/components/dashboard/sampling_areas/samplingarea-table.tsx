@@ -264,7 +264,7 @@ export function SamplingAreasTable({
                 { key: 'longitude', label: 'Longitude' },
                 { key: 'habitat_code', label: 'Habitat code' },
                 { key: 'habitat_structure_name', label: 'Habitat structure' },
-                { key: 'is_contact_zone', label: 'SA in a contact zone' },
+                { key: 'is_contact_zone', label: 'SA contains a contact zone' },
                 { key: 'habitat_photo_file_name', label: 'Habitat photo' },
                 { key: 'description', label: 'Description' },
               ] satisfies { key: keyof SamplingArea; label: string }[]).map((column) => (
@@ -401,3 +401,4 @@ export function SamplingAreasTable({
     </Card>
   );
 }
+
